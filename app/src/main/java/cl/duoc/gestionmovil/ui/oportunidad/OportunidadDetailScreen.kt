@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cl.duoc.gestionmovil.util.formatearFecha
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +63,7 @@ fun OportunidadDetailScreen(
                 Text("Nombre: ${oportunidad!!.nombre}", style = MaterialTheme.typography.headlineSmall)
                 Text("Tipo: ${oportunidad!!.tipo.etiqueta}", style = MaterialTheme.typography.bodyLarge)
                 Text("Descripción: ${oportunidad!!.descripcion}", style = MaterialTheme.typography.bodyLarge)
-                Text("Fecha Detección: ${oportunidad!!.fechaDeteccion}", style = MaterialTheme.typography.bodyLarge)
+                Text("Fecha Detección: ${formatearFecha(oportunidad!!.fechaDeteccion)}", style = MaterialTheme.typography.bodyLarge)
                 Text("Responsable: ${oportunidad!!.responsable}", style = MaterialTheme.typography.bodyLarge)
                 Text("Prioridad: ${oportunidad!!.prioridad.etiqueta}", style = MaterialTheme.typography.bodyLarge)
                 Text("Potencial: ${oportunidad!!.potencialComercial.etiqueta}", style = MaterialTheme.typography.bodyLarge)
