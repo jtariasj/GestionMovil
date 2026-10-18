@@ -15,9 +15,9 @@ import androidx.navigation.compose.rememberNavController
 import cl.duoc.gestionmovil.data.AppDatabase
 import cl.duoc.gestionmovil.ui.theme.GestionMovilTheme
 
-import cl.duoc.gestionmovil.ui.oportunidad.OportunidadListScreen
 import cl.duoc.gestionmovil.ui.oportunidad.OportunidadListViewModel
 import cl.duoc.gestionmovil.ui.oportunidad.OportunidadListViewModelFactory
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,23 +81,43 @@ fun AppNavigation(
             val listViewModel: OportunidadListViewModel = viewModel(
                 factory = OportunidadListViewModelFactory(oportunidadDao)
             )
-            OportunidadListScreen(
+            cl.duoc.gestionmovil.ui.oportunidad.OportunidadListScreen(
                 viewModel = listViewModel,
-                onOportunidadClick = { id ->
-                    // Próximamente: navegar al detalle usando el id
+                // ... tus otros parámetros ...
+                onItemClick = { idSeleccionado ->
+                    // Esto hace que viaje a la ruta 5 que creamos antes
+                    navController.navigate("oportunidad_detail/$idSeleccionado")
                 }
             )
         }
 
         // Ruta 4: Formulario de Oportunidad
         composable("oportunidad_form") {
-            // Aquí instanciamos tu ViewModel del formulario.
-            // (Si aún no le has creado un Factory como al de Login/Lista, me avisas y lo hacemos)
-            val formViewModel: cl.duoc.gestionmovil.ui.oportunidad.OportunidadFormViewModel = viewModel()
+            val formViewModel: cl.duoc.gestionmovil.ui.oportunidad.OportunidadFormViewModel = viewModel(
+                factory = cl.duoc.gestionmovil.ui.oportunidad.OportunidadFormViewModelFactory(oportunidadDao)
+            )
 
             cl.duoc.gestionmovil.ui.oportunidad.OportunidadFormScreen(
                 viewModel = formViewModel,
-                onNavigateBack = { navController.popBackStack() } // Para volver atrás después de guardar
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Ruta 5: Detalle de la oportunidad
+        composable(
+            route = "oportunidad_detail/{oportunidadId}",
+            arguments = listOf(androidx.navigation.navArgument("oportunidadId") { type = androidx.navigation.NavType.IntType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("oportunidadId") ?: 0
+
+            val detailViewModel: cl.duoc.gestionmovil.ui.oportunidad.OportunidadDetailViewModel = viewModel(
+                factory = cl.duoc.gestionmovil.ui.oportunidad.OportunidadDetailViewModelFactory(oportunidadDao)
+            )
+
+            cl.duoc.gestionmovil.ui.oportunidad.OportunidadDetailScreen(
+                oportunidadId = id,
+                viewModel = detailViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

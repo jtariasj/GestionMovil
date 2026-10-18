@@ -1,6 +1,7 @@
 package cl.duoc.gestionmovil.data
 
 import androidx.room3.Dao
+import androidx.room3.Delete
 import androidx.room3.Insert
 import androidx.room3.Query
 import androidx.room3.Update
@@ -25,4 +26,7 @@ interface OportunidadDao {
 
     @Query("SELECT * FROM oportunidades")
     fun getAllOportunidades(): Flow<List<Oportunidad>>
+
+    @Delete
+    suspend fun delete(oportunidad: Oportunidad)
 }

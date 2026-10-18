@@ -23,12 +23,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class OportunidadFormViewModel(
-    application: Application
-) : AndroidViewModel(application) {
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import cl.duoc.gestionmovil.data.OportunidadDao
 
-    private val database = AppDatabase.getDatabase(application)
-    private val repository = OportunidadRepository(database.oportunidadDao())
+class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : ViewModel() {
 
     private val _uiState = MutableStateFlow(estadoInicial())
     val uiState: StateFlow<OportunidadFormUiState> = _uiState.asStateFlow()
@@ -123,9 +123,20 @@ class OportunidadFormViewModel(
                 observaciones = estado.observaciones.trim()
             )
             viewModelScope.launch {
-                repository.guardar(oportunidad)
+                oportunidadDao.insertar(oportunidad)
                 _uiState.value = estadoInicial().copy(guardadoExitoso = true)
             }
         }
+
+    }
+}
+
+class OportunidadFormViewModelFactory(private val oportunidadDao: OportunidadDao) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(OportunidadFormViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return OportunidadFormViewModel(oportunidadDao) as T
+        }
+        throw IllegalArgumentException("Clase ViewModel desconocida")
     }
 }

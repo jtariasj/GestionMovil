@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun OportunidadListScreen(
     viewModel: OportunidadListViewModel,
-    onOportunidadClick: (Int) -> Unit // Para navegar al detalle después
+    onItemClick: (Int) -> Unit // Para navegar al detalle
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val oportunidades by viewModel.oportunidadesFiltradas.collectAsState()
@@ -50,7 +50,7 @@ fun OportunidadListScreen(
                 }
             } else {
                 items(oportunidades) { oportunidad ->
-                    OportunidadCard(oportunidad, onOportunidadClick)
+                    OportunidadCard(oportunidad, onItemClick)
                 }
             }
         }

@@ -1,10 +1,12 @@
 package cl.duoc.gestionmovil.ui.oportunidad
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -13,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
@@ -28,8 +31,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,6 +52,20 @@ fun OportunidadFormScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val calendario = java.util.Calendar.getInstance()
+
+    val datePickerDialog = android.app.DatePickerDialog(
+        context,
+        { _, anio, mes, dia ->
+            // Cuando el usuario elige la fecha, la formateamos y la mandamos al ViewModel
+            val fechaFormateada = String.format("%02d/%02d/%04d", dia, mes + 1, anio)
+            viewModel.cambiarFechaDeteccion(fechaFormateada)
+        },
+        calendario.get(java.util.Calendar.YEAR),
+        calendario.get(java.util.Calendar.MONTH),
+        calendario.get(java.util.Calendar.DAY_OF_MONTH)
+    )
 
     // Confirmación visual al guardar
     LaunchedEffect(uiState.guardadoExitoso) {
@@ -56,6 +75,19 @@ fun OportunidadFormScreen(
             // AGREGA ESTA LÍNEA AQUÍ ABAJO:
             onNavigateBack()
         }
+    }
+
+    // Variable para guardar la foto tomada en la pantalla
+    var fotoEvidencia by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<android.graphics.Bitmap?>(null)
+    }
+
+    // Lanzador de la cámara nativa
+    val cameraLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        // Cuando el usuario toma la foto y acepta, se guarda aquí
+        fotoEvidencia = bitmap
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -115,15 +147,33 @@ fun OportunidadFormScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            CampoFormulario(
-                valor = uiState.fechaDeteccion,
-                onValorCambia = viewModel::cambiarFechaDeteccion,
-                etiqueta = "Fecha de detección (dd/mm/aaaa)",
-                icono = Icons.Default.CalendarMonth,
-                hayError = uiState.errorFecha,
-                mensajeError = "Ingrese una fecha válida (dd/mm/aaaa), no futura",
-                modifier = Modifier.fillMaxWidth()
+            // Campo de fecha con Calendario Nativo
+            androidx.compose.material3.OutlinedTextField(
+                value = uiState.fechaDeteccion,
+                onValueChange = { }, // No hacemos nada aquí porque el calendario se encarga
+                label = { Text("Fecha de detección (dd/mm/aaaa)") },
+                leadingIcon = { androidx.compose.material3.Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+                readOnly = true, // Evita que se abra el teclado
+                isError = uiState.errorFecha,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { datePickerDialog.show() }, // Abre el calendario al tocar
+                enabled = false, // Truco visual para que el clickable del Modifier funcione mejor en Compose
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = if (uiState.errorFecha) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
+            if (uiState.errorFecha) {
+                Text(
+                    text = "Ingrese una fecha válida (dd/mm/aaaa), no futura",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                )
+            }
 
             CampoFormulario(
                 valor = uiState.responsable,
@@ -170,6 +220,46 @@ fun OportunidadFormScreen(
                 opcional = true,
                 modifier = Modifier.fillMaxWidth()
             )
+            // Sección de Evidencia Fotográfica (Cámara)
+            androidx.compose.material3.Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Evidencia fotográfica (Opcional)", style = MaterialTheme.typography.titleSmall)
+
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { cameraLauncher.launch(null) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        androidx.compose.material3.Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.CameraAlt,
+                            contentDescription = "Cámara",
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text("Tomar Foto")
+                    }
+
+                    // Si hay una foto tomada, la mostramos
+                    fotoEvidencia?.let { bitmap ->
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+                        androidx.compose.foundation.Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Evidencia de la oportunidad",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                        )
+                    }
+                }
+            }
 
             Button(
                 onClick = { viewModel.guardar() },
