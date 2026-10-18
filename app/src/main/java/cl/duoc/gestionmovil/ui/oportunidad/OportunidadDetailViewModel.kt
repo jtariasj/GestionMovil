@@ -53,15 +53,31 @@ class OportunidadDetailViewModel(private val oportunidadDao: OportunidadDao) : V
             _oportunidad.value = oportunidadActualizada
         }
     }
+
+    fun actualizarEstado(nuevoEstado: cl.duoc.gestionmovil.model.EstadoOportunidad) {
+        val oportunidadActual = oportunidad.value ?: return
+
+        // Creamos una copia con el nuevo estado
+        val oportunidadActualizada = oportunidadActual.copy(
+            estado = nuevoEstado,
+            fechaActualizacion = System.currentTimeMillis()
+        )
+
+        viewModelScope.launch {
+            oportunidadDao.actualizar(oportunidadActualizada)
+            // Actualizamos la UI inmediatamente
+            _oportunidad.value = oportunidadActualizada
+        }
+    }
 }
 
 // Factory para inyectar el DAO
-class OportunidadDetailViewModelFactory(private val oportunidadDao: OportunidadDao) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(OportunidadDetailViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return OportunidadDetailViewModel(oportunidadDao) as T
+    class OportunidadDetailViewModelFactory(private val oportunidadDao: OportunidadDao) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(OportunidadDetailViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return OportunidadDetailViewModel(oportunidadDao) as T
+            }
+            throw IllegalArgumentException("Clase ViewModel desconocida")
         }
-        throw IllegalArgumentException("Clase ViewModel desconocida")
     }
-}

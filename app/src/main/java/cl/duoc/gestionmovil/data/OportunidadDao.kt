@@ -29,4 +29,7 @@ interface OportunidadDao {
 
     @Delete
     suspend fun delete(oportunidad: Oportunidad)
+
+    @Query("SELECT * FROM oportunidades WHERE responsable = :nombreResponsable")
+    fun obtenerPorResponsable(nombreResponsable: String): kotlinx.coroutines.flow.Flow<List<cl.duoc.gestionmovil.model.Oportunidad>>
 }

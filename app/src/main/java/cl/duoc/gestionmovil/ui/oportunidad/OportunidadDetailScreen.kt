@@ -77,6 +77,56 @@ fun OportunidadDetailScreen(
                     Text("Observaciones: ${oportunidad!!.observaciones}", style = MaterialTheme.typography.bodyLarge)
                 }
 
+                // --- INICIO: LÓGICA DE ACTUALIZACIÓN DE ESTADO ---
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text("Estado Actual: ${oportunidad!!.estado.etiqueta}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+
+                // Filtramos los estados según tu OportunidadEnums.kt
+                val estadosPermitidos = if (rolUsuario == "SUPERVISOR") {
+                    cl.duoc.gestionmovil.model.EstadoOportunidad.values().toList()
+                } else {
+                    cl.duoc.gestionmovil.model.EstadoOportunidad.values().filter {
+                        // El ejecutivo NO puede seleccionar los estados definitivos
+                        it != cl.duoc.gestionmovil.model.EstadoOportunidad.PARTICIPACION_CONFIRMADA &&
+                                it != cl.duoc.gestionmovil.model.EstadoOportunidad.DESCARTADA
+                    }
+                }
+
+                var expandidoEstado by remember { mutableStateOf(false) }
+
+                ExposedDropdownMenuBox(
+                    expanded = expandidoEstado,
+                    onExpandedChange = { expandidoEstado = !expandidoEstado }
+                ) {
+                    OutlinedTextField(
+                        value = "Actualizar Estado",
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoEstado) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandidoEstado,
+                        onDismissRequest = { expandidoEstado = false }
+                    ) {
+                        estadosPermitidos.forEach { estadoItem ->
+                            DropdownMenuItem(
+                                text = { Text(estadoItem.etiqueta) }, // Usamos la etiqueta de tu Enum
+                                onClick = {
+                                    viewModel.actualizarEstado(estadoItem)
+                                    expandidoEstado = false
+                                }
+                            )
+                        }
+                    }
+                }
+                // --- FIN: LÓGICA DE ACTUALIZACIÓN DE ESTADO ---
+
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(8.dp))

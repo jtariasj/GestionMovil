@@ -43,7 +43,7 @@ import cl.duoc.gestionmovil.model.RolUsuario
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (RolUsuario) -> Unit,
+    onLoginSuccess: (String, String) -> Unit, //recibe dos String (rol y nombre)
     viewModel: LoginViewModel
 ) {
     var correo by remember { mutableStateOf("") }
@@ -52,7 +52,7 @@ fun LoginScreen(
 
     LaunchedEffect(uiState.usuarioLogueado) {
         uiState.usuarioLogueado?.let { usuario ->
-            onLoginSuccess(usuario.rol)
+            onLoginSuccess(usuario.rol.name, usuario.nombre) // Enviamos rol y nombre
         }
     }
 

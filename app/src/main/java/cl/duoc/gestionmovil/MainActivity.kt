@@ -65,8 +65,9 @@ fun AppNavigation(
 
             cl.duoc.gestionmovil.ui.login.LoginScreen(
                 viewModel = loginViewModel,
-                onLoginSuccess = { rol ->
-                    navController.navigate("dashboard/${rol.name}") {
+                onLoginSuccess = { rol, nombre ->
+                    // Viajamos al dashboard llevando rol y nombre
+                    navController.navigate("dashboard/$rol/$nombre") {
                         popUpTo("login") { inclusive = true }
                     }
                 }
@@ -74,14 +75,15 @@ fun AppNavigation(
         }
 
         // Ruta 2: Dashboard
-        composable("dashboard/{rol}") { backStackEntry ->
+        composable("dashboard/{rol}/{nombre}") { backStackEntry ->
             val rol = backStackEntry.arguments?.getString("rol") ?: "EJECUTIVO"
+            val nombre = backStackEntry.arguments?.getString("nombre") ?: ""
 
             DashboardScreen(
                 rolUsuario = rol,
-                onNavigateToList = { navController.navigate("oportunidad_list/$rol") },
+                // Pasamos rol y nombre a la ruta de la lista
+                onNavigateToList = { navController.navigate("oportunidad_list/$rol/$nombre") },
                 onNavigateToForm = { navController.navigate("oportunidad_form") },
-                // AGREGA ESTA LÍNEA AQUÍ:
                 onNavigateToOrganizaciones = { navController.navigate("organizaciones") },
                 onLogout = {
                     navController.navigate("login") {
@@ -91,16 +93,19 @@ fun AppNavigation(
             )
         }
 
-        // Ruta 3: Listado de Oportunidades (Recibe el rol para pasarlo al detalle)
-        composable("oportunidad_list/{rol}") { backStackEntry ->
+        // Ruta 3: Listado de Oportunidades
+        composable("oportunidad_list/{rol}/{nombre}") { backStackEntry ->
             val rol = backStackEntry.arguments?.getString("rol") ?: "EJECUTIVO"
+            val nombre = backStackEntry.arguments?.getString("nombre") ?: ""
+
+            // Le pasamos datos al Factory
             val listViewModel: OportunidadListViewModel = viewModel(
-                factory = OportunidadListViewModelFactory(oportunidadDao)
+                factory = OportunidadListViewModelFactory(oportunidadDao, rol, nombre)
             )
+
             cl.duoc.gestionmovil.ui.oportunidad.OportunidadListScreen(
                 viewModel = listViewModel,
                 onItemClick = { idSeleccionado ->
-                    // Navegamos al detalle llevando el ID y el ROL
                     navController.navigate("oportunidad_detail/$idSeleccionado/$rol")
                 }
             )

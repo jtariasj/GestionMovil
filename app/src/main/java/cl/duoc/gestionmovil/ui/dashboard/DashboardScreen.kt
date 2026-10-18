@@ -56,6 +56,21 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Alertas y Pendientes", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text("• 2 Oportunidades próximas a vencer", style = MaterialTheme.typography.bodyMedium)
+                    Text("• 3 Seguimientos pendientes de registro", style = MaterialTheme.typography.bodyMedium)
+                    Text("• 1 Gestión atrasada (Prioridad ALTA)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+
             if (rolUsuario == "SUPERVISOR") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),

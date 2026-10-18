@@ -11,21 +11,30 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
-class OportunidadListViewModel(private val oportunidadDao: OportunidadDao) : ViewModel() {
+class OportunidadListViewModel(
+    private val oportunidadDao: OportunidadDao,
+    private val rolUsuario: String,
+    private val nombreUsuario: String
+) : ViewModel() {
 
-    // Texto de búsqueda que el usuario escribirá
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
-    // Combinamos la lista de la base de datos con el texto de búsqueda
+    // 1. Elegimos qué lista traer desde Room según el rol
+    private val flujoBaseDatos = if (rolUsuario == "SUPERVISOR") {
+        oportunidadDao.getAllOportunidades()
+    } else {
+        oportunidadDao.obtenerPorResponsable(nombreUsuario)
+    }
+
+    // 2. Combinamos esa lista con el buscador
     val oportunidadesFiltradas: StateFlow<List<Oportunidad>> = combine(
-        oportunidadDao.getAllOportunidades(), // Necesitas tener esta función en OportunidadDao
+        flujoBaseDatos,
         _searchQuery
     ) { lista, query ->
         if (query.isBlank()) {
             lista
         } else {
-            // Filtramos por el nombre del evento/oportunidad
             lista.filter { it.nombre.contains(query, ignoreCase = true) }
         }
     }.stateIn(
@@ -39,12 +48,16 @@ class OportunidadListViewModel(private val oportunidadDao: OportunidadDao) : Vie
     }
 }
 
-// Factory para poder inicializarlo con el DAO
-class OportunidadListViewModelFactory(private val oportunidadDao: OportunidadDao) : ViewModelProvider.Factory {
+// FACTORY recibe el rol y el nombre, y se los pasa al ViewModel
+class OportunidadListViewModelFactory(
+    private val oportunidadDao: OportunidadDao,
+    private val rolUsuario: String,
+    private val nombreUsuario: String
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OportunidadListViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OportunidadListViewModel(oportunidadDao) as T
+            return OportunidadListViewModel(oportunidadDao, rolUsuario, nombreUsuario) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
