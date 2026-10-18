@@ -15,9 +15,9 @@ fun DashboardScreen(
     rolUsuario: String?,
     onNavigateToList: () -> Unit,
     onNavigateToForm: () -> Unit,
-    onLogout: () -> Unit // 1. Nuevo parámetro para la acción de cerrar sesión
+    onNavigateToOrganizaciones: () -> Unit, // 1. NUEVO PARAMETRO
+    onLogout: () -> Unit
 ) {
-    // 2. Envolvemos todo en un Scaffold para colocar la barra superior
     Scaffold(
         topBar = {
             TopAppBar(
@@ -36,7 +36,7 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // 3. Importante: respetar el padding del Scaffold
+                .padding(paddingValues)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -81,7 +81,6 @@ fun DashboardScreen(
                             Text("Registrar nueva oportunidad")
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        // 4. Agregamos botón para que el ejecutivo también vea su lista
                         Button(onClick = onNavigateToList, modifier = Modifier.fillMaxWidth()) {
                             Text("Ver mis oportunidades")
                         }
@@ -89,9 +88,19 @@ fun DashboardScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // BOTÓN PARA ORGANIZACIONES
+            Button(
+                onClick = onNavigateToOrganizaciones,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+            ) {
+                Text("Directorio de Organizaciones")
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 5. Botón de cierre de sesión alternativo (opcional, por si el usuario no ve el ícono superior)
             OutlinedButton(onClick = onLogout) {
                 Text("Cerrar Sesión")
             }

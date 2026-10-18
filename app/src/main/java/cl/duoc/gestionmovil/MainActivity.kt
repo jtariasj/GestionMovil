@@ -28,6 +28,8 @@ class MainActivity : ComponentActivity() {
         val usuarioDao = database.usuarioDao()
         val oportunidadDao = database.oportunidadDao()
         val seguimientoDao = database.seguimientoDao()
+        val organizacionDao = database.organizacionDao()
+        val contactoDao = database.contactoDao()
 
         setContent {
             GestionMovilTheme {
@@ -36,7 +38,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     // 2. Iniciamos el sistema de navegación
-                    AppNavigation(usuarioDao = usuarioDao, oportunidadDao = oportunidadDao, seguimientoDao = seguimientoDao)
+                    AppNavigation(usuarioDao = usuarioDao, oportunidadDao = oportunidadDao, seguimientoDao = seguimientoDao, organizacionDao = organizacionDao, contactoDao = contactoDao)
                 }
             }
         }
@@ -47,7 +49,9 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation(
     usuarioDao: cl.duoc.gestionmovil.data.UsuarioDao,
     oportunidadDao: cl.duoc.gestionmovil.data.OportunidadDao,
-    seguimientoDao: cl.duoc.gestionmovil.data.SeguimientoDao
+    seguimientoDao: cl.duoc.gestionmovil.data.SeguimientoDao,
+    organizacionDao: cl.duoc.gestionmovil.data.OrganizacionDao,
+    contactoDao: cl.duoc.gestionmovil.data.ContactoDao
 ) {
     val navController = rememberNavController()
 
@@ -69,14 +73,16 @@ fun AppNavigation(
             )
         }
 
-        // Ruta 2: Dashboard (Ahora recibe el rol correctamente)
+        // Ruta 2: Dashboard
         composable("dashboard/{rol}") { backStackEntry ->
             val rol = backStackEntry.arguments?.getString("rol") ?: "EJECUTIVO"
 
             DashboardScreen(
                 rolUsuario = rol,
-                onNavigateToList = { navController.navigate("oportunidad_list/$rol") }, // Pasamos el rol a la lista
+                onNavigateToList = { navController.navigate("oportunidad_list/$rol") },
                 onNavigateToForm = { navController.navigate("oportunidad_form") },
+                // AGREGA ESTA LÍNEA AQUÍ:
+                onNavigateToOrganizaciones = { navController.navigate("organizaciones") },
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
@@ -164,6 +170,38 @@ fun AppNavigation(
 
             cl.duoc.gestionmovil.ui.seguimiento.SeguimientoScreen(
                 viewModel = seguimientoViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Ruta 7: Organizaciones
+        composable("organizaciones") {
+            val orgViewModel: cl.duoc.gestionmovil.ui.organizacion.OrganizacionViewModel = viewModel(
+                factory = cl.duoc.gestionmovil.ui.organizacion.OrganizacionViewModelFactory(organizacionDao)
+            )
+
+            cl.duoc.gestionmovil.ui.organizacion.OrganizacionScreen(
+                viewModel = orgViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToContactos = { orgId ->
+                    navController.navigate("contactos/$orgId") // Nos prepararemos para la pantalla 8
+                }
+            )
+        }
+
+        // Ruta 8: Contactos de Organización
+        composable(
+            route = "contactos/{orgId}",
+            arguments = listOf(androidx.navigation.navArgument("orgId") { type = androidx.navigation.NavType.IntType })
+        ) { backStackEntry ->
+            val orgId = backStackEntry.arguments?.getInt("orgId") ?: 0
+
+            val contactoViewModel: cl.duoc.gestionmovil.ui.contacto.ContactoViewModel = viewModel(
+                factory = cl.duoc.gestionmovil.ui.contacto.ContactoViewModelFactory(contactoDao, orgId)
+            )
+
+            cl.duoc.gestionmovil.ui.contacto.ContactoScreen(
+                viewModel = contactoViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
