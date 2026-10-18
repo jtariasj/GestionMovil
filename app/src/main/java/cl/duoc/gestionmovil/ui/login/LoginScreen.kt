@@ -56,6 +56,12 @@ fun LoginScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.cerrarSesion()
+        correo = ""
+        contrasena = ""
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -5,9 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,10 +16,10 @@ import cl.duoc.gestionmovil.util.formatearFecha
 @Composable
 fun OportunidadDetailScreen(
     oportunidadId: Int,
+    rolUsuario: String, // NUEVO: Recibimos el rol para aplicar restricciones
     viewModel: OportunidadDetailViewModel,
     onNavigateBack: () -> Unit
 ) {
-    // Le decimos al ViewModel que busque los datos de esta oportunidad apenas se abre la pantalla
     LaunchedEffect(oportunidadId) {
         viewModel.cargarOportunidad(oportunidadId)
     }
@@ -38,21 +36,21 @@ fun OportunidadDetailScreen(
                     }
                 },
                 actions = {
-                    // Botón para eliminar
-                    IconButton(onClick = { viewModel.eliminarOportunidad(onNavigateBack) }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                    // RESTRICCIÓN: Solo el SUPERVISOR puede eliminar (descartar definitivamente)
+                    if (rolUsuario == "SUPERVISOR") {
+                        IconButton(onClick = { viewModel.eliminarOportunidad(onNavigateBack) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             )
         }
     ) { paddingValues ->
         if (oportunidad == null) {
-            // Mientras carga la info desde la BD mostramos un círculo de carga
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
-            // Cuando ya tenemos los datos, los mostramos
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -64,12 +62,57 @@ fun OportunidadDetailScreen(
                 Text("Tipo: ${oportunidad!!.tipo.etiqueta}", style = MaterialTheme.typography.bodyLarge)
                 Text("Descripción: ${oportunidad!!.descripcion}", style = MaterialTheme.typography.bodyLarge)
                 Text("Fecha Detección: ${formatearFecha(oportunidad!!.fechaDeteccion)}", style = MaterialTheme.typography.bodyLarge)
-                Text("Responsable: ${oportunidad!!.responsable}", style = MaterialTheme.typography.bodyLarge)
                 Text("Prioridad: ${oportunidad!!.prioridad.etiqueta}", style = MaterialTheme.typography.bodyLarge)
                 Text("Potencial: ${oportunidad!!.potencialComercial.etiqueta}", style = MaterialTheme.typography.bodyLarge)
 
                 if (!oportunidad!!.observaciones.isNullOrEmpty()) {
                     Text("Observaciones: ${oportunidad!!.observaciones}", style = MaterialTheme.typography.bodyLarge)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // LÓGICA DE REASIGNACIÓN
+                if (rolUsuario == "SUPERVISOR") {
+                    Text("Reasignar Ejecutivo (Solo Supervisor):", style = MaterialTheme.typography.titleMedium)
+
+                    val listaEjecutivos = listOf("Ejecutivo Uno", "Ejecutivo Dos", "Ejecutivo Tres")
+                    var expandido by remember { mutableStateOf(false) }
+
+                    ExposedDropdownMenuBox(
+                        expanded = expandido,
+                        onExpandedChange = { expandido = !expandido }
+                    ) {
+                        OutlinedTextField(
+                            value = oportunidad!!.responsable,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Responsable actual") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandido) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandido,
+                            onDismissRequest = { expandido = false }
+                        ) {
+                            listaEjecutivos.forEach { ejecutivo ->
+                                DropdownMenuItem(
+                                    text = { Text(ejecutivo) },
+                                    onClick = {
+                                        // Llamamos a la función de reasignar
+                                        viewModel.reasignarOportunidad(ejecutivo)
+                                        expandido = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Si es ejecutivo, solo ve el texto normal
+                    Text("Responsable: ${oportunidad!!.responsable}", style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }

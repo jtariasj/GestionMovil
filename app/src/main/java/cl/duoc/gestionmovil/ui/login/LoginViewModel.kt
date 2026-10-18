@@ -93,6 +93,11 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
             }
         }
     }
+
+
+    fun cerrarSesion() {
+        _uiState.value = LoginUiState()
+    }
 }
 
 class LoginViewModelFactory(private val usuarioDao: UsuarioDao) : ViewModelProvider.Factory {
@@ -104,3 +109,4 @@ class LoginViewModelFactory(private val usuarioDao: UsuarioDao) : ViewModelProvi
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+

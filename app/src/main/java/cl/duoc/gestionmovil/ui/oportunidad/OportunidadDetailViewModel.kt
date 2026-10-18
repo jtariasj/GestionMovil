@@ -36,6 +36,23 @@ class OportunidadDetailViewModel(private val oportunidadDao: OportunidadDao) : V
             }
         }
     }
+
+    fun reasignarOportunidad(nuevoResponsable: String) {
+        val oportunidadActual = oportunidad.value ?: return
+
+        // Creamos una copia de la oportunidad con el nuevo responsable
+        val oportunidadActualizada = oportunidadActual.copy(
+            responsable = nuevoResponsable,
+            fechaActualizacion = System.currentTimeMillis()
+        )
+
+        viewModelScope.launch {
+            // Actualizamos en la Base de Datos
+            oportunidadDao.actualizar(oportunidadActualizada)
+            // Actualizamos el estado de la UI para que se refleje de inmediato
+            _oportunidad.value = oportunidadActualizada
+        }
+    }
 }
 
 // Factory para inyectar el DAO
