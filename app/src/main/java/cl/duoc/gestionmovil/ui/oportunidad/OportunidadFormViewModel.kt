@@ -78,6 +78,9 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
         _uiState.update { it.copy(guardadoExitoso = false) }
     }
 
+    fun cambiarFotoPath(path: String?) {
+        _uiState.update { it.copy(fotoPath = path) }
+    }
     // Acción del formulario
     fun guardar() {
         val estado = _uiState.value
@@ -101,6 +104,7 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                 errorResponsable = errorResponsable,
                 errorPrioridad = errorPrioridad,
                 errorPotencial = errorPotencial
+
             )
         }
 
@@ -120,7 +124,8 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                 prioridad = estado.prioridad!!,
                 potencialComercial = estado.potencial!!,
                 fechaActualizacion = ahora,
-                observaciones = estado.observaciones.trim()
+                observaciones = estado.observaciones.trim(),
+                fotoPath = estado.fotoPath
             )
             viewModelScope.launch {
                 oportunidadDao.insertar(oportunidad)

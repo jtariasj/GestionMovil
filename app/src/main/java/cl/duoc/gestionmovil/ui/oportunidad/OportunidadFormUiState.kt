@@ -16,7 +16,7 @@ data class OportunidadFormUiState(
     val prioridad: Prioridad? = null,
     val potencial: PotencialComercial? = null,
     val observaciones: String = "",
-
+    val fotoPath: String? = null,
     // Estados de error
     val errorNombre: Boolean = false,
     val errorTipo: Boolean = false,
