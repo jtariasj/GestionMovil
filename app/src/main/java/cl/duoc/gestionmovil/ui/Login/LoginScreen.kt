@@ -1,4 +1,4 @@
-package cl.duoc.gestionmovil.ui.Login
+package cl.duoc.gestionmovil.ui.login
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -7,8 +7,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import cl.duoc.gestionmovil.model.RolUsuario
 
 @Composable
 fun LoginScreen(

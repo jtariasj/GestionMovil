@@ -27,7 +27,7 @@ class OportunidadFormViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
-    private val database = AppDatabase.getInstance(application)
+    private val database = AppDatabase.getDatabase(application)
     private val repository = OportunidadRepository(database.oportunidadDao())
 
     private val _uiState = MutableStateFlow(estadoInicial())

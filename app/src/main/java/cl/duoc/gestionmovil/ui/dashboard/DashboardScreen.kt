@@ -8,7 +8,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DashboardScreen(rolUsuario: String?) {
+fun DashboardScreen(
+    rolUsuario: String?,
+    onNavigateToList: () -> Unit, // Nueva acción para el Supervisor
+    onNavigateToForm: () -> Unit  // Nueva acción para el Ejecutivo
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -23,7 +27,6 @@ fun DashboardScreen(rolUsuario: String?) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Mostramos el rol actual
         Text(
             text = "Perfil: $rolUsuario",
             style = MaterialTheme.typography.titleMedium,
@@ -32,7 +35,6 @@ fun DashboardScreen(rolUsuario: String?) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Lógica condicional según el rol[cite: 39]
         if (rolUsuario == "SUPERVISOR") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -41,7 +43,7 @@ fun DashboardScreen(rolUsuario: String?) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Panel de Control (Supervisor)", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { /* Navegar a listado de todas las oportunidades */ }) {
+                    Button(onClick = onNavigateToList) { // Conectamos el botón aquí
                         Text("Ver todas las oportunidades")
                     }
                 }
@@ -54,7 +56,7 @@ fun DashboardScreen(rolUsuario: String?) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Mis Gestiones (Ejecutivo)", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { /* Navegar a formulario de oportunidad */ }) {
+                    Button(onClick = onNavigateToForm) { // Conectamos el botón aquí
                         Text("Registrar nueva oportunidad")
                     }
                 }

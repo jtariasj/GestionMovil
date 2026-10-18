@@ -1,10 +1,11 @@
-package cl.duoc.gestionmovil.ui.Login
+package cl.duoc.gestionmovil.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.UsuarioDao
 import cl.duoc.gestionmovil.model.Usuario
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +28,7 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         // Mostramos estado de carga (opcional, pero buena práctica)
         _uiState.value = LoginUiState(isLoading = true)
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO){
             try {
                 // Consultamos a Room si el usuario existe
                 val usuario = usuarioDao.login(correo, contrasena)

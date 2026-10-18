@@ -42,7 +42,8 @@ import cl.duoc.gestionmovil.ui.components.CampoFormulario
 @Composable
 fun OportunidadFormScreen(
     modifier: Modifier = Modifier,
-    viewModel: OportunidadFormViewModel = viewModel()
+    viewModel: OportunidadFormViewModel,
+    onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -52,6 +53,8 @@ fun OportunidadFormScreen(
         if (uiState.guardadoExitoso) {
             snackbarHostState.showSnackbar("Oportunidad registrada correctamente")
             viewModel.mensajeMostrado()
+            // AGREGA ESTA LÍNEA AQUÍ ABAJO:
+            onNavigateBack()
         }
     }
 

@@ -22,4 +22,7 @@ interface OportunidadDao {
 
     @Query("SELECT * FROM oportunidades WHERE id = :id")
     suspend fun obtenerPorId(id: Int): Oportunidad?
+
+    @Query("SELECT * FROM oportunidades")
+    fun getAllOportunidades(): Flow<List<Oportunidad>>
 }
