@@ -4,9 +4,8 @@ import cl.duoc.gestionmovil.model.Prioridad
 import cl.duoc.gestionmovil.model.PotencialComercial
 import cl.duoc.gestionmovil.model.TipoOportunidad
 
-// "Fotografía" del estado actual del formulario de oportunidad
 data class OportunidadFormUiState(
-    // Valores
+    // Valores originales
     val nombre: String = "",
     val tipo: TipoOportunidad? = null,
     val descripcion: String = "",
@@ -17,7 +16,11 @@ data class OportunidadFormUiState(
     val potencial: PotencialComercial? = null,
     val observaciones: String = "",
 
-    // Estados de error
+    // NUEVOS VALORES (Punto 4 de la rúbrica)
+    val costo: String = "",
+    val fechaTermino: String = "",
+
+    // Estados de error originales
     val errorNombre: Boolean = false,
     val errorTipo: Boolean = false,
     val errorDescripcion: Boolean = false,
@@ -26,6 +29,10 @@ data class OportunidadFormUiState(
     val errorResponsable: Boolean = false,
     val errorPrioridad: Boolean = false,
     val errorPotencial: Boolean = false,
+
+    // NUEVOS ESTADOS DE ERROR (Usamos String para mandar mensajes específicos)
+    val errorCosto: String? = null,
+    val errorFechaTermino: String? = null,
 
     // Para avisar a la pantalla que se guardó correctamente
     val guardadoExitoso: Boolean = false

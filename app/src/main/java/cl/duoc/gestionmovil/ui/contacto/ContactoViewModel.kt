@@ -1,5 +1,6 @@
 package cl.duoc.gestionmovil.ui.contacto
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -8,7 +9,20 @@ import cl.duoc.gestionmovil.model.Contacto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class ContactoUiState(
+    val nombre: String = "",
+    val cargo: String = "",
+    val telefono: String = "",
+    val correo: String = "",
+    val errorNombre: String? = null,
+    val errorCargo: String? = null,
+    val errorTelefono: String? = null,
+    val errorCorreo: String? = null,
+    val guardadoExitoso: Boolean = false
+)
 
 class ContactoViewModel(
     private val contactoDao: ContactoDao,
@@ -18,8 +32,10 @@ class ContactoViewModel(
     private val _contactos = MutableStateFlow<List<Contacto>>(emptyList())
     val contactos: StateFlow<List<Contacto>> = _contactos.asStateFlow()
 
+    private val _uiState = MutableStateFlow(ContactoUiState())
+    val uiState: StateFlow<ContactoUiState> = _uiState.asStateFlow()
+
     init {
-        // Cargamos solo los contactos que pertenecen a la organización seleccionada
         viewModelScope.launch {
             contactoDao.getContactosPorOrganizacion(organizacionId).collect { lista ->
                 _contactos.value = lista
@@ -27,16 +43,60 @@ class ContactoViewModel(
         }
     }
 
-    fun agregarContacto(nombre: String, cargo: String, telefono: String, correo: String) {
-        viewModelScope.launch {
-            val nuevoContacto = Contacto(
-                nombre = nombre,
-                cargo = cargo,
-                telefono = telefono,
-                correo = correo,
-                organizacionId = organizacionId
+    // Funciones para actualizar estado (manteniendo los valores ingresados)
+    fun cambiarNombre(valor: String) = _uiState.update { it.copy(nombre = valor, errorNombre = null) }
+    fun cambiarCargo(valor: String) = _uiState.update { it.copy(cargo = valor, errorCargo = null) }
+    fun cambiarTelefono(valor: String) = _uiState.update { it.copy(telefono = valor, errorTelefono = null) }
+    fun cambiarCorreo(valor: String) = _uiState.update { it.copy(correo = valor, errorCorreo = null) }
+    fun resetExito() = _uiState.update { it.copy(guardadoExitoso = false) }
+
+    fun validarYGuardar() {
+        val estado = _uiState.value
+        var isValid = true
+
+        var errNombre: String? = null
+        var errCargo: String? = null
+        var errTelefono: String? = null
+        var errCorreo: String? = null
+
+        // Validar obligatorios
+        if (estado.nombre.isBlank()) { errNombre = "El nombre es obligatorio"; isValid = false }
+        if (estado.cargo.isBlank()) { errCargo = "El cargo es obligatorio"; isValid = false }
+
+        // Validar formato numérico y longitud (ej. 8 a 12 dígitos)
+        if (estado.telefono.isBlank() || !estado.telefono.matches(Regex("^[+]?[0-9]{8,12}$"))) {
+            errTelefono = "Ingrese un teléfono válido (8-12 dígitos numéricos)"
+            isValid = false
+        }
+
+        // Validar formato de correo usando Patterns de Android
+        if (estado.correo.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(estado.correo).matches()) {
+            errCorreo = "Formato de correo inválido"
+            isValid = false
+        }
+
+        _uiState.update {
+            it.copy(
+                errorNombre = errNombre,
+                errorCargo = errCargo,
+                errorTelefono = errTelefono,
+                errorCorreo = errCorreo
             )
-            contactoDao.insert(nuevoContacto)
+        }
+
+        // Impedir guardar con info inválida
+        if (isValid) {
+            viewModelScope.launch {
+                contactoDao.insert(Contacto(
+                    nombre = estado.nombre.trim(),
+                    cargo = estado.cargo.trim(),
+                    telefono = estado.telefono.trim(),
+                    correo = estado.correo.trim(),
+                    organizacionId = organizacionId
+                ))
+                // Limpiar formulario y notificar éxito
+                _uiState.value = ContactoUiState(guardadoExitoso = true)
+            }
         }
     }
 }

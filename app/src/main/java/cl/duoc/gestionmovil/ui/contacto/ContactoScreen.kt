@@ -23,13 +23,18 @@ fun ContactoScreen(
     onNavigateBack: () -> Unit
 ) {
     val contactos by viewModel.contactos.collectAsStateWithLifecycle()
+    // 1. Ahora observamos el uiState que viene del ViewModel
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     var mostrarDialogo by remember { mutableStateOf(false) }
 
-    // Estados del formulario
-    var nombre by remember { mutableStateOf("") }
-    var cargo by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
-    var correo by remember { mutableStateOf("") }
+    // 2. Efecto para cerrar el diálogo automáticamente cuando el guardado es exitoso
+    LaunchedEffect(uiState.guardadoExitoso) {
+        if (uiState.guardadoExitoso) {
+            mostrarDialogo = false
+            viewModel.resetExito()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -97,35 +102,54 @@ fun ContactoScreen(
                 title = { Text("Nuevo Contacto") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre Completo") })
-                        OutlinedTextField(value = cargo, onValueChange = { cargo = it }, label = { Text("Cargo") })
+
+                        // 3. Así se conecta el campo de texto con el ViewModel y sus errores
                         OutlinedTextField(
-                            value = telefono,
-                            onValueChange = { telefono = it },
-                            label = { Text("Teléfono") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                            value = uiState.nombre,
+                            onValueChange = { viewModel.cambiarNombre(it) },
+                            label = { Text("Nombre Completo *") },
+                            isError = uiState.errorNombre != null,
+                            supportingText = { uiState.errorNombre?.let { Text(it) } }
                         )
+
                         OutlinedTextField(
-                            value = correo,
-                            onValueChange = { correo = it },
+                            value = uiState.cargo,
+                            onValueChange = { viewModel.cambiarCargo(it) },
+                            label = { Text("Cargo *") },
+                            isError = uiState.errorCargo != null,
+                            supportingText = { uiState.errorCargo?.let { Text(it) } }
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.telefono,
+                            onValueChange = { viewModel.cambiarTelefono(it) },
+                            label = { Text("Teléfono") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            isError = uiState.errorTelefono != null,
+                            supportingText = { uiState.errorTelefono?.let { Text(it) } }
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.correo,
+                            onValueChange = { viewModel.cambiarCorreo(it) },
                             label = { Text("Correo Electrónico") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            isError = uiState.errorCorreo != null,
+                            supportingText = { uiState.errorCorreo?.let { Text(it) } }
                         )
                     }
                 },
                 confirmButton = {
                     Button(
-                        onClick = {
-                            if (nombre.isNotBlank() && cargo.isNotBlank()) {
-                                viewModel.agregarContacto(nombre, cargo, telefono, correo)
-                                nombre = ""; cargo = ""; telefono = ""; correo = ""
-                                mostrarDialogo = false
-                            }
-                        }
+                        // 4. Al hacer clic, el ViewModel hace toda la validación
+                        onClick = { viewModel.validarYGuardar() }
                     ) { Text("Guardar") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { mostrarDialogo = false }) { Text("Cancelar") }
+                    TextButton(onClick = {
+                        mostrarDialogo = false
+                        viewModel.resetExito() // Limpiar estados si cancela
+                    }) { Text("Cancelar") }
                 }
             )
         }

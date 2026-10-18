@@ -74,6 +74,15 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
         _uiState.update { it.copy(observaciones = valor) }
     }
 
+    // NUEVAS FUNCIONES DE ACTUALIZACIÓN
+    fun cambiarCosto(valor: String) {
+        _uiState.update { it.copy(costo = valor, errorCosto = null) }
+    }
+
+    fun cambiarFechaTermino(valor: String) {
+        _uiState.update { it.copy(fechaTermino = valor, errorFechaTermino = null) }
+    }
+
     fun mensajeMostrado() {
         _uiState.update { it.copy(guardadoExitoso = false) }
     }
@@ -91,6 +100,34 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
         val errorPrioridad = !validarSeleccion(estado.prioridad)
         val errorPotencial = !validarSeleccion(estado.potencial)
 
+        // REGLA DE NEGOCIO 1: Costos no negativos
+        var msgErrorCosto: String? = null
+        if (estado.costo.isBlank()) {
+            msgErrorCosto = "El costo referencial es obligatorio."
+        } else {
+            val costoNum = estado.costo.toDoubleOrNull()
+            if (costoNum == null) {
+                msgErrorCosto = "Debe ser un valor numérico válido."
+            } else if (costoNum < 0) {
+                msgErrorCosto = "El costo no puede ser un valor negativo."
+            }
+        }
+
+        // REGLA DE NEGOCIO 2: Fechas coherentes (Término no puede ser antes de inicio/detección)
+        var msgErrorFechaTermino: String? = null
+        if (estado.fechaTermino.isBlank()) {
+            msgErrorFechaTermino = "La fecha de término es obligatoria."
+        } else {
+            // Intentamos validar que la fecha de término sea posterior a la de inicio
+            val fechaInicio = parsearFecha(estado.fechaDeteccion)
+            val fechaFin = parsearFecha(estado.fechaTermino)
+            if (fechaInicio != null && fechaFin != null) {
+                if (fechaFin < fechaInicio) { // Comparamos los milisegundos (Long)
+                    msgErrorFechaTermino = "La fecha de término no puede ser anterior al inicio."
+                }
+            }
+        }
+
         _uiState.update {
             it.copy(
                 errorNombre = errorNombre,
@@ -100,13 +137,16 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                 errorFecha = errorFecha,
                 errorResponsable = errorResponsable,
                 errorPrioridad = errorPrioridad,
-                errorPotencial = errorPotencial
+                errorPotencial = errorPotencial,
+                errorCosto = msgErrorCosto,
+                errorFechaTermino = msgErrorFechaTermino
             )
         }
 
         val formularioValido =
             !errorNombre && !errorTipo && !errorDescripcion && !errorFuente &&
-                    !errorFecha && !errorResponsable && !errorPrioridad && !errorPotencial
+                    !errorFecha && !errorResponsable && !errorPrioridad && !errorPotencial &&
+                    msgErrorCosto == null && msgErrorFechaTermino == null
 
         if (formularioValido) {
             val ahora = System.currentTimeMillis()
@@ -121,22 +161,23 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                 potencialComercial = estado.potencial!!,
                 fechaActualizacion = ahora,
                 observaciones = estado.observaciones.trim()
+                // Nota: Si tu modelo 'Oportunidad' tiene campos para el costo y fecha de término, agrégalos aquí.
             )
             viewModelScope.launch {
                 oportunidadDao.insertar(oportunidad)
                 _uiState.value = estadoInicial().copy(guardadoExitoso = true)
             }
         }
-
     }
-}
 
-class OportunidadFormViewModelFactory(private val oportunidadDao: OportunidadDao) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(OportunidadFormViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return OportunidadFormViewModel(oportunidadDao) as T
+    class OportunidadFormViewModelFactory(private val oportunidadDao: OportunidadDao) :
+        ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(OportunidadFormViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return OportunidadFormViewModel(oportunidadDao) as T
+            }
+            throw IllegalArgumentException("Clase ViewModel desconocida")
         }
-        throw IllegalArgumentException("Clase ViewModel desconocida")
     }
 }
