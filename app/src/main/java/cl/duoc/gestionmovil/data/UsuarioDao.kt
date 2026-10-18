@@ -11,8 +11,18 @@ interface UsuarioDao {
     @Insert
     suspend fun insert(usuario: Usuario)
 
-    @Query("SELECT * FROM usuarios WHERE correo = :correo AND contrasena = :contrasena LIMIT 1")
-    suspend fun login(correo: String, contrasena: String): Usuario?
+    @Query("SELECT COUNT(*) FROM usuarios")
+    suspend fun contarUsuarios(): Int
+
+    @Query(
+        """
+        SELECT * FROM usuarios 
+        WHERE (LOWER(correo) = LOWER(:credencial) OR LOWER(correo) = LOWER(:credencial || '@test.com')) 
+          AND contrasena = :contrasena 
+        LIMIT 1
+        """
+    )
+    suspend fun login(credencial: String, contrasena: String): Usuario?
 
     @Query("SELECT * FROM usuarios")
     fun getAllUsuarios(): Flow<List<Usuario>>
