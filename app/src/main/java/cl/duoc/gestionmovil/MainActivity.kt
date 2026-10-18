@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
         val database = AppDatabase.getDatabase(applicationContext)
         val usuarioDao = database.usuarioDao()
         val oportunidadDao = database.oportunidadDao()
+        val seguimientoDao = database.seguimientoDao()
 
         setContent {
             GestionMovilTheme {
@@ -35,7 +36,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     // 2. Iniciamos el sistema de navegación
-                    AppNavigation(usuarioDao = usuarioDao, oportunidadDao = oportunidadDao)
+                    AppNavigation(usuarioDao = usuarioDao, oportunidadDao = oportunidadDao, seguimientoDao = seguimientoDao)
                 }
             }
         }
@@ -45,7 +46,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(
     usuarioDao: cl.duoc.gestionmovil.data.UsuarioDao,
-    oportunidadDao: cl.duoc.gestionmovil.data.OportunidadDao // Agregamos el DAO de oportunidades
+    oportunidadDao: cl.duoc.gestionmovil.data.OportunidadDao,
+    seguimientoDao: cl.duoc.gestionmovil.data.SeguimientoDao
 ) {
     val navController = rememberNavController()
 
@@ -139,6 +141,29 @@ fun AppNavigation(
                 oportunidadId = id,
                 rolUsuario = rol, // Le pasamos el rol a la pantalla
                 viewModel = detailViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                // ESTA ES LA LÍNEA QUE FALTA AGREGAR:
+                onNavigateToSeguimientos = { idOpt ->
+                    navController.navigate("seguimiento/$idOpt")
+                }
+            )
+        }
+
+        // Ruta 6: Seguimientos
+        composable(
+            route = "seguimiento/{oportunidadId}",
+            arguments = listOf(
+                androidx.navigation.navArgument("oportunidadId") { type = androidx.navigation.NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("oportunidadId") ?: 0
+
+            val seguimientoViewModel: cl.duoc.gestionmovil.ui.seguimiento.SeguimientoViewModel = viewModel(
+                factory = cl.duoc.gestionmovil.ui.seguimiento.SeguimientoViewModelFactory(seguimientoDao, id)
+            )
+
+            cl.duoc.gestionmovil.ui.seguimiento.SeguimientoScreen(
+                viewModel = seguimientoViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

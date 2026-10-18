@@ -18,7 +18,8 @@ fun OportunidadDetailScreen(
     oportunidadId: Int,
     rolUsuario: String, // NUEVO: Recibimos el rol para aplicar restricciones
     viewModel: OportunidadDetailViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToSeguimientos: (Int) -> Unit
 ) {
     LaunchedEffect(oportunidadId) {
         viewModel.cargarOportunidad(oportunidadId)
@@ -64,6 +65,13 @@ fun OportunidadDetailScreen(
                 Text("Fecha Detección: ${formatearFecha(oportunidad!!.fechaDeteccion)}", style = MaterialTheme.typography.bodyLarge)
                 Text("Prioridad: ${oportunidad!!.prioridad.etiqueta}", style = MaterialTheme.typography.bodyLarge)
                 Text("Potencial: ${oportunidad!!.potencialComercial.etiqueta}", style = MaterialTheme.typography.bodyLarge)
+
+                Button(
+                    onClick = { onNavigateToSeguimientos(oportunidadId) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Ver Historial de Gestiones")
+                }
 
                 if (!oportunidad!!.observaciones.isNullOrEmpty()) {
                     Text("Observaciones: ${oportunidad!!.observaciones}", style = MaterialTheme.typography.bodyLarge)
