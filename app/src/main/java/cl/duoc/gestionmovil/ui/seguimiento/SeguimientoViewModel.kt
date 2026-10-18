@@ -24,23 +24,24 @@ class SeguimientoViewModel(
 
     private fun cargarHistorial() {
         viewModelScope.launch {
-            // Asume que tu SeguimientoDao tiene un método:
+            // Asume que tu SeguimientoDao tiene un metodo:
             // @Query("SELECT * FROM seguimientos WHERE idOportunidad = :id ORDER BY fecha DESC")
             // fun obtenerPorOportunidad(id: Int): Flow<List<Seguimiento>>
-            seguimientoDao.obtenerPorOportunidad(oportunidadId).collect { lista ->
+            seguimientoDao.getSeguimientosPorOportunidad(oportunidadId).collect { lista ->
                 _historial.value = lista
             }
         }
     }
 
-    fun agregarSeguimiento(descripcion: String) {
+    fun agregarSeguimiento(descripcion: String, tipoGestion: String = "General") {
         viewModelScope.launch {
             val nuevoSeguimiento = Seguimiento(
-                idOportunidad = oportunidadId,
+                fecha = System.currentTimeMillis(),
                 descripcion = descripcion,
-                fecha = System.currentTimeMillis()
+                tipoGestion = tipoGestion,
+                oportunidadId = oportunidadId
             )
-            seguimientoDao.insertar(nuevoSeguimiento)
+            seguimientoDao.insert(nuevoSeguimiento)
         }
     }
 }

@@ -20,7 +20,7 @@ import cl.duoc.gestionmovil.model.Usuario
         Contacto::class,
         Seguimiento::class
     ],
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
