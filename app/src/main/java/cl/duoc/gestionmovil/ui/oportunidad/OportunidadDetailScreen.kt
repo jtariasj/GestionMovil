@@ -65,7 +65,7 @@ fun OportunidadDetailScreen(
                 Text("Fecha Detección: ${oportunidad!!.fechaDeteccion}", style = MaterialTheme.typography.bodyLarge)
                 Text("Responsable: ${oportunidad!!.responsable}", style = MaterialTheme.typography.bodyLarge)
                 Text("Prioridad: ${oportunidad!!.prioridad.etiqueta}", style = MaterialTheme.typography.bodyLarge)
-                Text("Potencial: ${oportunidad!!.potencial.etiqueta}", style = MaterialTheme.typography.bodyLarge)
+                Text("Potencial: ${oportunidad!!.potencialComercial.etiqueta}", style = MaterialTheme.typography.bodyLarge)
 
                 if (!oportunidad!!.observaciones.isNullOrEmpty()) {
                     Text("Observaciones: ${oportunidad!!.observaciones}", style = MaterialTheme.typography.bodyLarge)
