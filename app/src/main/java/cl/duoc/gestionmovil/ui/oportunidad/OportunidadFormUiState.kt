@@ -16,12 +16,10 @@ data class OportunidadFormUiState(
     val potencial: PotencialComercial? = null,
     val observaciones: String = "",
 
-
-    // NUEVOS VALORES (Punto 4 de la rúbrica)
     val costo: String = "",
     val fechaTermino: String = "",
 
-    // Estados de error originales
+
 
     val fotoPath: String? = null,
     // Estados de error
@@ -35,7 +33,7 @@ data class OportunidadFormUiState(
     val errorPrioridad: Boolean = false,
     val errorPotencial: Boolean = false,
 
-    // NUEVOS ESTADOS DE ERROR (Usamos String para mandar mensajes específicos)
+    // Usamos String para mandar mensajes específicos
     val errorCosto: String? = null,
     val errorFechaTermino: String? = null,
 

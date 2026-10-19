@@ -171,15 +171,10 @@ fun OportunidadFormScreen(
                 value = uiState.fechaDeteccion,
                 onValueChange = { },
                 label = { Text("Fecha de detección (dd/mm/aaaa)") },
-
-                leadingIcon = { androidx.compose.material3.Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null) },
-                readOnly = true, // Evita que se abra el teclado
-
                 leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
                 readOnly = true,
-
                 isError = uiState.errorFecha,
-                supportingText = { // <-- AQUÍ AGREGAMOS EL MENSAJE DE ERROR
+                supportingText = {
                     if (uiState.errorFecha) {
                         Text(
                             text = "Ingrese una fecha válida (dd/mm/aaaa), no futura",
@@ -199,25 +194,23 @@ fun OportunidadFormScreen(
                 )
             )
 
-
-
             // --- NUEVO CAMPO: FECHA DE TÉRMINO ---
-            val datePickerTermino = android.app.DatePickerDialog(
+            val datePickerTermino = DatePickerDialog(
                 context,
                 { _, anio, mes, dia ->
                     val fechaFormateada = String.format("%02d/%02d/%04d", dia, mes + 1, anio)
                     viewModel.cambiarFechaTermino(fechaFormateada)
                 },
-                calendario.get(java.util.Calendar.YEAR),
-                calendario.get(java.util.Calendar.MONTH),
-                calendario.get(java.util.Calendar.DAY_OF_MONTH)
+                calendario.get(Calendar.YEAR),
+                calendario.get(Calendar.MONTH),
+                calendario.get(Calendar.DAY_OF_MONTH)
             )
 
-            androidx.compose.material3.OutlinedTextField(
+            OutlinedTextField(
                 value = uiState.fechaTermino,
                 onValueChange = { },
                 label = { Text("Fecha de término (dd/mm/aaaa)") },
-                leadingIcon = { androidx.compose.material3.Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null) },
+                leadingIcon = { Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null) },
                 readOnly = true,
                 isError = uiState.errorFechaTermino != null,
                 supportingText = {
@@ -229,35 +222,27 @@ fun OportunidadFormScreen(
                     .fillMaxWidth()
                     .clickable { datePickerTermino.show() },
                 enabled = false,
-                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                colors = OutlinedTextFieldDefaults.colors(
                     disabledTextColor = MaterialTheme.colorScheme.onSurface,
                     disabledBorderColor = if (uiState.errorFechaTermino != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                     disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-
-            if (uiState.errorFecha) {
-                Text(
-                    text = "Ingrese una fecha válida (dd/mm/aaaa), no futura",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(start = 16.dp, top = 2.dp)
-
                 )
             )
 
             // --- CAMPO COSTO REFERENCIAL ---
-            androidx.compose.material3.OutlinedTextField(
+            OutlinedTextField(
                 value = uiState.costo,
                 onValueChange = viewModel::cambiarCosto,
                 label = { Text("Costo referencial (CLP)") },
-                leadingIcon = { androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Default.AttachMoney, contentDescription = null) },
+                leadingIcon = { Icon(imageVector = Icons.Default.AttachMoney, contentDescription = null) },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                 isError = uiState.errorCosto != null,
                 supportingText = {
                     if (uiState.errorCosto != null) {
                         Text(text = uiState.errorCosto!!, color = MaterialTheme.colorScheme.error)
                     }
-                }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -359,7 +344,7 @@ fun OportunidadFormScreen(
             }
 
             Button(
-                onClick = { viewModel.guardar() }
+                onClick = { viewModel.guardar() },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Guardar oportunidad")
@@ -371,5 +356,4 @@ fun OportunidadFormScreen(
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
-}
 }

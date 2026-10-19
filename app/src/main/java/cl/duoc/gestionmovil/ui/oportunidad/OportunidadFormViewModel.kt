@@ -1,10 +1,9 @@
 package cl.duoc.gestionmovil.ui.oportunidad
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import cl.duoc.gestionmovil.data.AppDatabase
-import cl.duoc.gestionmovil.data.OportunidadRepository
+import cl.duoc.gestionmovil.data.OportunidadDao
 import cl.duoc.gestionmovil.model.Oportunidad
 import cl.duoc.gestionmovil.model.PotencialComercial
 import cl.duoc.gestionmovil.model.Prioridad
@@ -23,11 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import cl.duoc.gestionmovil.data.OportunidadDao
-
 class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : ViewModel() {
 
     private val _uiState = MutableStateFlow(estadoInicial())
@@ -38,58 +32,20 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
         fechaDeteccion = formatearFecha(System.currentTimeMillis())
     )
 
-    fun cambiarNombre(valor: String) {
-        _uiState.update { it.copy(nombre = valor) }
-    }
+    fun cambiarNombre(valor: String) { _uiState.update { it.copy(nombre = valor) } }
+    fun cambiarTipo(valor: TipoOportunidad) { _uiState.update { it.copy(tipo = valor) } }
+    fun cambiarDescripcion(valor: String) { _uiState.update { it.copy(descripcion = valor) } }
+    fun cambiarFuente(valor: String) { _uiState.update { it.copy(fuente = valor) } }
+    fun cambiarFechaDeteccion(valor: String) { _uiState.update { it.copy(fechaDeteccion = valor) } }
+    fun cambiarResponsable(valor: String) { _uiState.update { it.copy(responsable = valor) } }
+    fun cambiarPrioridad(valor: Prioridad) { _uiState.update { it.copy(prioridad = valor) } }
+    fun cambiarPotencial(valor: PotencialComercial) { _uiState.update { it.copy(potencial = valor) } }
+    fun cambiarObservaciones(valor: String) { _uiState.update { it.copy(observaciones = valor) } }
+    fun cambiarCosto(valor: String) { _uiState.update { it.copy(costo = valor, errorCosto = null) } }
+    fun cambiarFechaTermino(valor: String) { _uiState.update { it.copy(fechaTermino = valor, errorFechaTermino = null) } }
+    fun mensajeMostrado() { _uiState.update { it.copy(guardadoExitoso = false) } }
+    fun cambiarFotoPath(path: String?) { _uiState.update { it.copy(fotoPath = path) } }
 
-    fun cambiarTipo(valor: TipoOportunidad) {
-        _uiState.update { it.copy(tipo = valor) }
-    }
-
-    fun cambiarDescripcion(valor: String) {
-        _uiState.update { it.copy(descripcion = valor) }
-    }
-
-    fun cambiarFuente(valor: String) {
-        _uiState.update { it.copy(fuente = valor) }
-    }
-
-    fun cambiarFechaDeteccion(valor: String) {
-        _uiState.update { it.copy(fechaDeteccion = valor) }
-    }
-
-    fun cambiarResponsable(valor: String) {
-        _uiState.update { it.copy(responsable = valor) }
-    }
-
-    fun cambiarPrioridad(valor: Prioridad) {
-        _uiState.update { it.copy(prioridad = valor) }
-    }
-
-    fun cambiarPotencial(valor: PotencialComercial) {
-        _uiState.update { it.copy(potencial = valor) }
-    }
-
-    fun cambiarObservaciones(valor: String) {
-        _uiState.update { it.copy(observaciones = valor) }
-    }
-
-    // NUEVAS FUNCIONES DE ACTUALIZACIÓN
-    fun cambiarCosto(valor: String) {
-        _uiState.update { it.copy(costo = valor, errorCosto = null) }
-    }
-
-    fun cambiarFechaTermino(valor: String) {
-        _uiState.update { it.copy(fechaTermino = valor, errorFechaTermino = null) }
-    }
-
-    fun mensajeMostrado() {
-        _uiState.update { it.copy(guardadoExitoso = false) }
-    }
-
-    fun cambiarFotoPath(path: String?) {
-        _uiState.update { it.copy(fotoPath = path) }
-    }
     // Acción del formulario
     fun guardar() {
         val estado = _uiState.value
@@ -140,14 +96,9 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                 errorFecha = errorFecha,
                 errorResponsable = errorResponsable,
                 errorPrioridad = errorPrioridad,
-
                 errorPotencial = errorPotencial,
                 errorCosto = msgErrorCosto,
                 errorFechaTermino = msgErrorFechaTermino
-
-                errorPotencial = errorPotencial
-
-
             )
         }
 
@@ -168,29 +119,25 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                 prioridad = estado.prioridad!!,
                 potencialComercial = estado.potencial!!,
                 fechaActualizacion = ahora,
-
-                observaciones = estado.observaciones.trim()
-                // Nota: Si tu modelo 'Oportunidad' tiene campos para el costo y fecha de término, agrégalos aquí.
-
                 observaciones = estado.observaciones.trim(),
                 fotoPath = estado.fotoPath
-
+                // Si agregaste costoReferencial o fechaTermino a la data class Oportunidad, agrégalos aquí también.
             )
+
             viewModelScope.launch {
                 oportunidadDao.insertar(oportunidad)
                 _uiState.value = estadoInicial().copy(guardadoExitoso = true)
             }
         }
     }
+}
 
-    class OportunidadFormViewModelFactory(private val oportunidadDao: OportunidadDao) :
-        ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(OportunidadFormViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
-                return OportunidadFormViewModel(oportunidadDao) as T
-            }
-            throw IllegalArgumentException("Clase ViewModel desconocida")
+class OportunidadFormViewModelFactory(private val oportunidadDao: OportunidadDao) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(OportunidadFormViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return OportunidadFormViewModel(oportunidadDao) as T
         }
+        throw IllegalArgumentException("Clase ViewModel desconocida")
     }
 }
