@@ -20,7 +20,7 @@ import cl.duoc.gestionmovil.model.Usuario
         Contacto::class,
         Seguimiento::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -41,7 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "gestion_movil_v6.db"
+                    "gestion_movil_v7.db"
                 )
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
