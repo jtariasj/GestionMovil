@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -24,13 +25,13 @@ fun OrganizacionScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var mostrarDialogo by remember { mutableStateOf(false) }
 
-    // SNACKBAR HOST STATE PARA LA ALERTA
-    val snackbarHostState = remember { SnackbarHostState() }
+
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.guardadoExitoso) {
         if (uiState.guardadoExitoso) {
             mostrarDialogo = false
-            snackbarHostState.showSnackbar("Creado exitosamente")
+            android.widget.Toast.makeText(context, "Organización creada exitosamente", android.widget.Toast.LENGTH_SHORT).show()
             viewModel.resetExito()
         }
     }
@@ -47,8 +48,6 @@ fun OrganizacionScreen(
         floatingActionButton = {
             FloatingActionButton(onClick = { mostrarDialogo = true }) { Icon(Icons.Default.Add, contentDescription = "Agregar Organización") }
         },
-        // AGREGAR EL SNACKBAR HOST
-        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier

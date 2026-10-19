@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,14 +27,12 @@ fun ContactoScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var mostrarDialogo by remember { mutableStateOf(false) }
 
-    // AGREGAMOS EL SNACKBAR HOST STATE
-    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.guardadoExitoso) {
         if (uiState.guardadoExitoso) {
             mostrarDialogo = false
-            // MOSTRAMOS LA ALERTA DE ÉXITO
-            snackbarHostState.showSnackbar("Creado exitosamente")
+            android.widget.Toast.makeText(context, "Contacto creado exitosamente", android.widget.Toast.LENGTH_SHORT).show()
             viewModel.resetExito()
         }
     }
@@ -50,8 +49,6 @@ fun ContactoScreen(
         floatingActionButton = {
             FloatingActionButton(onClick = { mostrarDialogo = true }) { Icon(Icons.Default.Add, contentDescription = "Agregar Contacto") }
         },
-        // AÑADIMOS EL HOST DEL SNACKBAR AL SCAFFOLD
-        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier

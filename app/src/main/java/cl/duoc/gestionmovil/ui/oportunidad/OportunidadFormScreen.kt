@@ -69,7 +69,6 @@ fun OportunidadFormScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val calendario = Calendar.getInstance()
 
@@ -87,9 +86,9 @@ fun OportunidadFormScreen(
     // Confirmación visual al guardar
     LaunchedEffect(uiState.guardadoExitoso) {
         if (uiState.guardadoExitoso) {
-            snackbarHostState.showSnackbar("Oportunidad registrada correctamente")
+            android.widget.Toast.makeText(context, "Creado exitosamente", android.widget.Toast.LENGTH_SHORT).show()
             viewModel.mensajeMostrado()
-            onNavigateBack()
+            onNavigateBack() // Ahora puede navegar de inmediato
         }
     }
 
@@ -351,9 +350,5 @@ fun OportunidadFormScreen(
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
     }
 }
