@@ -23,15 +23,17 @@ fun ContactoScreen(
     onNavigateBack: () -> Unit
 ) {
     val contactos by viewModel.contactos.collectAsStateWithLifecycle()
-    // 1. Ahora observamos el uiState que viene del ViewModel
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     var mostrarDialogo by remember { mutableStateOf(false) }
 
-    // 2. Efecto para cerrar el diálogo automáticamente cuando el guardado es exitoso
+    // AGREGAMOS EL SNACKBAR HOST STATE
+    val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(uiState.guardadoExitoso) {
         if (uiState.guardadoExitoso) {
             mostrarDialogo = false
+            // MOSTRAMOS LA ALERTA DE ÉXITO
+            snackbarHostState.showSnackbar("Creado exitosamente")
             viewModel.resetExito()
         }
     }
@@ -41,17 +43,15 @@ fun ContactoScreen(
             TopAppBar(
                 title = { Text("Contactos de la Empresa") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
+                    IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver") }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { mostrarDialogo = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Contacto")
-            }
-        }
+            FloatingActionButton(onClick = { mostrarDialogo = true }) { Icon(Icons.Default.Add, contentDescription = "Agregar Contacto") }
+        },
+        // AÑADIMOS EL HOST DEL SNACKBAR AL SCAFFOLD
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -95,15 +95,12 @@ fun ContactoScreen(
             }
         }
 
-        // Diálogo para registrar nuevo contacto
         if (mostrarDialogo) {
             AlertDialog(
                 onDismissRequest = { mostrarDialogo = false },
                 title = { Text("Nuevo Contacto") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-
-                        // 3. Así se conecta el campo de texto con el ViewModel y sus errores
                         OutlinedTextField(
                             value = uiState.nombre,
                             onValueChange = { viewModel.cambiarNombre(it) },
@@ -111,7 +108,6 @@ fun ContactoScreen(
                             isError = uiState.errorNombre != null,
                             supportingText = { uiState.errorNombre?.let { Text(it) } }
                         )
-
                         OutlinedTextField(
                             value = uiState.cargo,
                             onValueChange = { viewModel.cambiarCargo(it) },
@@ -119,7 +115,6 @@ fun ContactoScreen(
                             isError = uiState.errorCargo != null,
                             supportingText = { uiState.errorCargo?.let { Text(it) } }
                         )
-
                         OutlinedTextField(
                             value = uiState.telefono,
                             onValueChange = { viewModel.cambiarTelefono(it) },
@@ -128,7 +123,6 @@ fun ContactoScreen(
                             isError = uiState.errorTelefono != null,
                             supportingText = { uiState.errorTelefono?.let { Text(it) } }
                         )
-
                         OutlinedTextField(
                             value = uiState.correo,
                             onValueChange = { viewModel.cambiarCorreo(it) },
@@ -139,18 +133,8 @@ fun ContactoScreen(
                         )
                     }
                 },
-                confirmButton = {
-                    Button(
-                        // 4. Al hacer clic, el ViewModel hace toda la validación
-                        onClick = { viewModel.validarYGuardar() }
-                    ) { Text("Guardar") }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        mostrarDialogo = false
-                        viewModel.resetExito() // Limpiar estados si cancela
-                    }) { Text("Cancelar") }
-                }
+                confirmButton = { Button(onClick = { viewModel.validarYGuardar() }) { Text("Guardar") } },
+                dismissButton = { TextButton(onClick = { mostrarDialogo = false; viewModel.resetExito() }) { Text("Cancelar") } }
             )
         }
     }

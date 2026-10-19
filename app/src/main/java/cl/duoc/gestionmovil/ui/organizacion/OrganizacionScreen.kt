@@ -18,32 +18,37 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun OrganizacionScreen(
     viewModel: OrganizacionViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToContactos: (Int) -> Unit // Para ir a la pantalla 8 (Contactos)
+    onNavigateToContactos: (Int) -> Unit
 ) {
     val organizaciones by viewModel.organizaciones.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var mostrarDialogo by remember { mutableStateOf(false) }
 
-    // Estados para el formulario de nueva organización
-    var nombre by remember { mutableStateOf("") }
-    var rut by remember { mutableStateOf("") }
-    var direccion by remember { mutableStateOf("") }
+    // SNACKBAR HOST STATE PARA LA ALERTA
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.guardadoExitoso) {
+        if (uiState.guardadoExitoso) {
+            mostrarDialogo = false
+            snackbarHostState.showSnackbar("Creado exitosamente")
+            viewModel.resetExito()
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Organizaciones") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
+                    IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver") }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { mostrarDialogo = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Organización")
-            }
-        }
+            FloatingActionButton(onClick = { mostrarDialogo = true }) { Icon(Icons.Default.Add, contentDescription = "Agregar Organización") }
+        },
+        // AGREGAR EL SNACKBAR HOST
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -65,7 +70,7 @@ fun OrganizacionScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onNavigateToContactos(org.id) }, // Clic para ver sus contactos
+                                .clickable { onNavigateToContactos(org.id) },
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -79,32 +84,39 @@ fun OrganizacionScreen(
             }
         }
 
-        // Diálogo para registrar una nueva organización
         if (mostrarDialogo) {
             AlertDialog(
                 onDismissRequest = { mostrarDialogo = false },
                 title = { Text("Nueva Organización") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre Empresa") })
-                        OutlinedTextField(value = rut, onValueChange = { rut = it }, label = { Text("RUT") })
-                        OutlinedTextField(value = direccion, onValueChange = { direccion = it }, label = { Text("Dirección") })
+                        OutlinedTextField(
+                            value = uiState.nombre,
+                            onValueChange = { viewModel.cambiarNombre(it) },
+                            label = { Text("Nombre Empresa *") },
+                            isError = uiState.errorNombre != null,
+                            supportingText = { uiState.errorNombre?.let { Text(it) } }
+                        )
+                        OutlinedTextField(
+                            value = uiState.rut,
+                            onValueChange = { viewModel.cambiarRut(it) },
+                            label = { Text("RUT *") },
+                            isError = uiState.errorRut != null,
+                            supportingText = { uiState.errorRut?.let { Text(it) } }
+                        )
+                        OutlinedTextField(
+                            value = uiState.direccion,
+                            onValueChange = { viewModel.cambiarDireccion(it) },
+                            label = { Text("Dirección") }
+                        )
                     }
                 },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (nombre.isNotBlank() && rut.isNotBlank()) {
-                                viewModel.agregarOrganizacion(nombre, rut, direccion)
-                                // Limpiamos campos y cerramos
-                                nombre = ""; rut = ""; direccion = ""
-                                mostrarDialogo = false
-                            }
-                        }
-                    ) { Text("Guardar") }
-                },
+                confirmButton = { Button(onClick = { viewModel.validarYGuardar() }) { Text("Guardar") } },
                 dismissButton = {
-                    TextButton(onClick = { mostrarDialogo = false }) { Text("Cancelar") }
+                    TextButton(onClick = {
+                        mostrarDialogo = false
+                        viewModel.resetExito()
+                    }) { Text("Cancelar") }
                 }
             )
         }

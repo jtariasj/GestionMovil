@@ -1,11 +1,12 @@
 package cl.duoc.gestionmovil.ui.contacto
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.ContactoDao
 import cl.duoc.gestionmovil.model.Contacto
+import cl.duoc.gestionmovil.util.validarCorreo // Asegúrate de tener estas funciones en tu archivo de utilidades
+import cl.duoc.gestionmovil.util.validarTelefono
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,7 +44,6 @@ class ContactoViewModel(
         }
     }
 
-    // Funciones para actualizar estado (manteniendo los valores ingresados)
     fun cambiarNombre(valor: String) = _uiState.update { it.copy(nombre = valor, errorNombre = null) }
     fun cambiarCargo(valor: String) = _uiState.update { it.copy(cargo = valor, errorCargo = null) }
     fun cambiarTelefono(valor: String) = _uiState.update { it.copy(telefono = valor, errorTelefono = null) }
@@ -59,32 +59,25 @@ class ContactoViewModel(
         var errTelefono: String? = null
         var errCorreo: String? = null
 
-        // Validar obligatorios
         if (estado.nombre.isBlank()) { errNombre = "El nombre es obligatorio"; isValid = false }
         if (estado.cargo.isBlank()) { errCargo = "El cargo es obligatorio"; isValid = false }
 
-        // Validar formato numérico y longitud (ej. 8 a 12 dígitos)
-        if (estado.telefono.isBlank() || !estado.telefono.matches(Regex("^[+]?[0-9]{8,12}$"))) {
-            errTelefono = "Ingrese un teléfono válido (8-12 dígitos numéricos)"
+        // APLICANDO NUEVA VALIDACIÓN DE TELÉFONO
+        if (estado.telefono.isBlank() || !validarTelefono(estado.telefono)) {
+            errTelefono = "Ingrese un teléfono válido (máx 20 caracteres)"
             isValid = false
         }
 
-        // Validar formato de correo usando Patterns de Android
-        if (estado.correo.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(estado.correo).matches()) {
-            errCorreo = "Formato de correo inválido"
+        // APLICANDO NUEVA VALIDACIÓN DE CORREO
+        if (estado.correo.isBlank() || !validarCorreo(estado.correo)) {
+            errCorreo = "El correo debe terminar en @gmail.com o @test.com"
             isValid = false
         }
 
         _uiState.update {
-            it.copy(
-                errorNombre = errNombre,
-                errorCargo = errCargo,
-                errorTelefono = errTelefono,
-                errorCorreo = errCorreo
-            )
+            it.copy(errorNombre = errNombre, errorCargo = errCargo, errorTelefono = errTelefono, errorCorreo = errCorreo)
         }
 
-        // Impedir guardar con info inválida
         if (isValid) {
             viewModelScope.launch {
                 contactoDao.insert(Contacto(
@@ -94,7 +87,6 @@ class ContactoViewModel(
                     correo = estado.correo.trim(),
                     organizacionId = organizacionId
                 ))
-                // Limpiar formulario y notificar éxito
                 _uiState.value = ContactoUiState(guardadoExitoso = true)
             }
         }

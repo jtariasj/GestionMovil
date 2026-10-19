@@ -10,6 +10,7 @@ import cl.duoc.gestionmovil.model.Prioridad
 import cl.duoc.gestionmovil.model.TipoOportunidad
 import cl.duoc.gestionmovil.util.formatearFecha
 import cl.duoc.gestionmovil.util.parsearFecha
+import cl.duoc.gestionmovil.util.validarContieneLetras
 import cl.duoc.gestionmovil.util.validarDescripcion
 import cl.duoc.gestionmovil.util.validarFechaDeteccion
 import cl.duoc.gestionmovil.util.validarFuente
@@ -52,8 +53,8 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
 
         val errorNombre = !validarNombreOportunidad(estado.nombre)
         val errorTipo = !validarSeleccion(estado.tipo)
-        val errorDescripcion = !validarDescripcion(estado.descripcion)
-        val errorFuente = !validarFuente(estado.fuente)
+        val errorDescripcion = !validarContieneLetras(estado.descripcion)
+        val errorFuente = !validarContieneLetras(estado.fuente)
         val errorFecha = !validarFechaDeteccion(estado.fechaDeteccion)
         val errorResponsable = !validarResponsable(estado.responsable)
         val errorPrioridad = !validarSeleccion(estado.prioridad)
