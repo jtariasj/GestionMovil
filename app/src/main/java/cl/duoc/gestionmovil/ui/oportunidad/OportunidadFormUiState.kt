@@ -36,6 +36,7 @@ data class OportunidadFormUiState(
     // Usamos String para mandar mensajes específicos
     val errorCosto: String? = null,
     val errorFechaTermino: String? = null,
+    val errorDuplicado: String? = null,
 
     // Para avisar a la pantalla que se guardó correctamente
     val guardadoExitoso: Boolean = false

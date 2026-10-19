@@ -74,6 +74,17 @@ class ContactoViewModel(
             isValid = false
         }
 
+        val correoTrim = estado.correo.trim()
+        val nombreTrim = estado.nombre.trim()
+        val cargoTrim = estado.cargo.trim()
+        val duplicado = _contactos.value.any {
+            it.correo.equals(correoTrim, ignoreCase = true) || (it.nombre.equals(nombreTrim, ignoreCase = true) && it.cargo.equals(cargoTrim, ignoreCase = true))
+        }
+        if (duplicado) {
+            errCorreo = "Ya existe un contacto con este correo o nombre y cargo"
+            isValid = false
+        }
+
         _uiState.update {
             it.copy(errorNombre = errNombre, errorCargo = errCargo, errorTelefono = errTelefono, errorCorreo = errCorreo)
         }
@@ -81,10 +92,10 @@ class ContactoViewModel(
         if (isValid) {
             viewModelScope.launch {
                 contactoDao.insert(Contacto(
-                    nombre = estado.nombre.trim(),
-                    cargo = estado.cargo.trim(),
+                    nombre = nombreTrim,
+                    cargo = cargoTrim,
                     telefono = estado.telefono.trim(),
-                    correo = estado.correo.trim(),
+                    correo = correoTrim,
                     organizacionId = organizacionId
                 ))
                 _uiState.value = ContactoUiState(guardadoExitoso = true)

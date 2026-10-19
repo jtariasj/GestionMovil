@@ -32,4 +32,7 @@ interface OportunidadDao {
 
     @Query("SELECT * FROM oportunidades WHERE responsable = :nombreResponsable")
     fun obtenerPorResponsable(nombreResponsable: String): kotlinx.coroutines.flow.Flow<List<cl.duoc.gestionmovil.model.Oportunidad>>
+
+    @Query("SELECT * FROM oportunidades WHERE nombre = :nombre")
+    suspend fun obtenerPorNombre(nombre: String): List<Oportunidad>
 }

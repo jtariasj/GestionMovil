@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.gestionmovil.util.formatearFecha
@@ -20,6 +21,7 @@ fun SeguimientoScreen(
 ) {
     var nuevaGestion by remember { mutableStateOf("") }
     val historial by viewModel.historial.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -52,8 +54,10 @@ fun SeguimientoScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = {
-                    if(nuevaGestion.isNotBlank()){
-                        viewModel.agregarSeguimiento(nuevaGestion)
+                    if (nuevaGestion.isNotBlank()) {
+                        viewModel.agregarSeguimiento(nuevaGestion, onDuplicado = {
+                            android.widget.Toast.makeText(context, "Ya existe un seguimiento idéntico", android.widget.Toast.LENGTH_SHORT).show()
+                        })
                         nuevaGestion = ""
                     }
                 },

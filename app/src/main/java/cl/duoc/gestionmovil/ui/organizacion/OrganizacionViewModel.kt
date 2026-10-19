@@ -62,13 +62,23 @@ class OrganizacionViewModel(private val organizacionDao: OrganizacionDao) : View
             isValid = false
         }
 
+        val nombreTrim = estado.nombre.trim()
+        val rutTrim = estado.rut.trim()
+        val duplicado = _organizaciones.value.any {
+            it.nombreEmpresa.equals(nombreTrim, ignoreCase = true) || it.rut.equals(rutTrim, ignoreCase = true)
+        }
+        if (duplicado) {
+            errNombre = "Ya existe una organización con este nombre o RUT"
+            isValid = false
+        }
+
         _uiState.update { it.copy(errorNombre = errNombre, errorRut = errRut) }
 
         if (isValid) {
             viewModelScope.launch {
                 val nuevaOrg = Organizacion(
-                    nombreEmpresa = estado.nombre.trim(),
-                    rut = estado.rut.trim(),
+                    nombreEmpresa = nombreTrim,
+                    rut = rutTrim,
                     direccion = estado.direccion.trim()
                 )
                 organizacionDao.insert(nuevaOrg)

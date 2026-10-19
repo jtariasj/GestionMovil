@@ -33,18 +33,18 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
         fechaDeteccion = formatearFecha(System.currentTimeMillis())
     )
 
-    fun cambiarNombre(valor: String) { _uiState.update { it.copy(nombre = valor) } }
-    fun cambiarTipo(valor: TipoOportunidad) { _uiState.update { it.copy(tipo = valor) } }
-    fun cambiarDescripcion(valor: String) { _uiState.update { it.copy(descripcion = valor) } }
-    fun cambiarFuente(valor: String) { _uiState.update { it.copy(fuente = valor) } }
-    fun cambiarFechaDeteccion(valor: String) { _uiState.update { it.copy(fechaDeteccion = valor) } }
-    fun cambiarResponsable(valor: String) { _uiState.update { it.copy(responsable = valor) } }
-    fun cambiarPrioridad(valor: Prioridad) { _uiState.update { it.copy(prioridad = valor) } }
-    fun cambiarPotencial(valor: PotencialComercial) { _uiState.update { it.copy(potencial = valor) } }
-    fun cambiarObservaciones(valor: String) { _uiState.update { it.copy(observaciones = valor) } }
-    fun cambiarCosto(valor: String) { _uiState.update { it.copy(costo = valor, errorCosto = null) } }
-    fun cambiarFechaTermino(valor: String) { _uiState.update { it.copy(fechaTermino = valor, errorFechaTermino = null) } }
-    fun mensajeMostrado() { _uiState.update { it.copy(guardadoExitoso = false) } }
+    fun cambiarNombre(valor: String) { _uiState.update { it.copy(nombre = valor, errorNombre = false, errorDuplicado = null) } }
+    fun cambiarTipo(valor: TipoOportunidad) { _uiState.update { it.copy(tipo = valor, errorTipo = false, errorDuplicado = null) } }
+    fun cambiarDescripcion(valor: String) { _uiState.update { it.copy(descripcion = valor, errorDescripcion = false, errorDuplicado = null) } }
+    fun cambiarFuente(valor: String) { _uiState.update { it.copy(fuente = valor, errorFuente = false, errorDuplicado = null) } }
+    fun cambiarFechaDeteccion(valor: String) { _uiState.update { it.copy(fechaDeteccion = valor, errorFecha = false, errorDuplicado = null) } }
+    fun cambiarResponsable(valor: String) { _uiState.update { it.copy(responsable = valor, errorResponsable = false, errorDuplicado = null) } }
+    fun cambiarPrioridad(valor: Prioridad) { _uiState.update { it.copy(prioridad = valor, errorPrioridad = false, errorDuplicado = null) } }
+    fun cambiarPotencial(valor: PotencialComercial) { _uiState.update { it.copy(potencial = valor, errorPotencial = false, errorDuplicado = null) } }
+    fun cambiarObservaciones(valor: String) { _uiState.update { it.copy(observaciones = valor, errorDuplicado = null) } }
+    fun cambiarCosto(valor: String) { _uiState.update { it.copy(costo = valor, errorCosto = null, errorDuplicado = null) } }
+    fun cambiarFechaTermino(valor: String) { _uiState.update { it.copy(fechaTermino = valor, errorFechaTermino = null, errorDuplicado = null) } }
+    fun mensajeMostrado() { _uiState.update { it.copy(guardadoExitoso = false, errorDuplicado = null) } }
     fun cambiarFotoPath(path: String?) { _uiState.update { it.copy(fotoPath = path) } }
 
     // Acción del formulario
@@ -99,7 +99,8 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                 errorPrioridad = errorPrioridad,
                 errorPotencial = errorPotencial,
                 errorCosto = msgErrorCosto,
-                errorFechaTermino = msgErrorFechaTermino
+                errorFechaTermino = msgErrorFechaTermino,
+                errorDuplicado = null
             )
         }
 
@@ -109,25 +110,43 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                     msgErrorCosto == null && msgErrorFechaTermino == null
 
         if (formularioValido) {
-            val ahora = System.currentTimeMillis()
-            val oportunidad = Oportunidad(
-                nombre = estado.nombre.trim(),
-                tipo = estado.tipo!!,
-                descripcion = estado.descripcion.trim(),
-                fuenteInformacion = estado.fuente.trim(),
-                fechaDeteccion = parsearFecha(estado.fechaDeteccion)!!,
-                responsable = estado.responsable.trim(),
-                prioridad = estado.prioridad!!,
-                potencialComercial = estado.potencial!!,
-                fechaActualizacion = ahora,
-                observaciones = estado.observaciones.trim(),
-                fotoPath = estado.fotoPath
-                // Si agregaste costoReferencial o fechaTermino a la data class Oportunidad, agrégalos aquí también.
-            )
-
+            val nombreTrim = estado.nombre.trim()
             viewModelScope.launch {
-                oportunidadDao.insertar(oportunidad)
-                _uiState.value = estadoInicial().copy(guardadoExitoso = true)
+                val existentes = oportunidadDao.obtenerPorNombre(nombreTrim)
+                if (existentes.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            errorNombre = true,
+                            errorTipo = true,
+                            errorDescripcion = true,
+                            errorFuente = true,
+                            errorFecha = true,
+                            errorResponsable = true,
+                            errorPrioridad = true,
+                            errorPotencial = true,
+                            errorCosto = "La oportunidad ya está creada",
+                            errorFechaTermino = null,
+                            errorDuplicado = "La oportunidad ya está creada."
+                        )
+                    }
+                } else {
+                    val ahora = System.currentTimeMillis()
+                    val oportunidad = Oportunidad(
+                        nombre = nombreTrim,
+                        tipo = estado.tipo!!,
+                        descripcion = estado.descripcion.trim(),
+                        fuenteInformacion = estado.fuente.trim(),
+                        fechaDeteccion = parsearFecha(estado.fechaDeteccion)!!,
+                        responsable = estado.responsable.trim(),
+                        prioridad = estado.prioridad!!,
+                        potencialComercial = estado.potencial!!,
+                        fechaActualizacion = ahora,
+                        observaciones = estado.observaciones.trim(),
+                        fotoPath = estado.fotoPath
+                    )
+                    oportunidadDao.insertar(oportunidad)
+                    _uiState.value = estadoInicial().copy(guardadoExitoso = true)
+                }
             }
         }
     }

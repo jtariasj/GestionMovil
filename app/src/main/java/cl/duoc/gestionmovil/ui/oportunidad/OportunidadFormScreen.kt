@@ -350,5 +350,18 @@ fun OportunidadFormScreen(
             }
         }
 
+        if (uiState.errorDuplicado != null) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { viewModel.mensajeMostrado() },
+                title = { Text("Oportunidad duplicada") },
+                text = { Text(uiState.errorDuplicado ?: "La oportunidad ya esta creada.") },
+                confirmButton = {
+                    Button(onClick = { viewModel.mensajeMostrado() }) {
+                        Text("Aceptar")
+                    }
+                },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
     }
 }
