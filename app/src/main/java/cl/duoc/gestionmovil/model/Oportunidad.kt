@@ -20,5 +20,6 @@ data class Oportunidad(
     val potencialComercial: PotencialComercial,
     val estado: EstadoOportunidad = EstadoOportunidad.EVENTO_IDENTIFICADO,
     val fechaActualizacion: Long,      // epoch millis
-    val observaciones: String = ""
+    val observaciones: String = "",
+    val fotoPath: String? = null
 )

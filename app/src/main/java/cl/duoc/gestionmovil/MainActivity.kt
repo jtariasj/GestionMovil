@@ -154,7 +154,7 @@ fun AppNavigation(
                 viewModel = detailViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 // ESTA ES LA LÍNEA QUE FALTA AGREGAR:
-                onNavigateToSeguimientos = { idOpt ->
+                onIrASeguimiento = { idOpt ->
                     navController.navigate("seguimiento/$idOpt")
                 }
             )
