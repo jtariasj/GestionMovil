@@ -10,8 +10,29 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.lazy.items
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OportunidadCard(
+    oportunidad: cl.duoc.gestionmovil.model.Oportunidad,
+    onClick: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick(oportunidad.id) },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = oportunidad.nombre, style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(4.dp))
+            // Usamos colores semánticos como pide el checklist (IE: MaterialTheme.colorScheme.primary)
+            Text(text = "Estado: ${oportunidad.estado}", color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
 @Composable
 fun OportunidadListScreen(
     viewModel: OportunidadListViewModel,
@@ -49,30 +70,19 @@ fun OportunidadListScreen(
                     Text("No hay oportunidades para mostrar.", modifier = Modifier.padding(16.dp))
                 }
             } else {
-                items(oportunidades) { oportunidad ->
-                    OportunidadCard(oportunidad, onItemClick)
+                items(
+                    items = oportunidades,
+                    key = {it.id}
+                ) { oportunidad ->
+                    Box(modifier = Modifier.animateItem()) {
+                        OportunidadCard(
+                            oportunidad = oportunidad,
+                            onClick = onItemClick
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-fun OportunidadCard(
-    oportunidad: cl.duoc.gestionmovil.model.Oportunidad,
-    onClick: (Int) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick(oportunidad.id) },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = oportunidad.nombre, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(4.dp))
-            // Usamos colores semánticos como pide el checklist (IE: MaterialTheme.colorScheme.primary)
-            Text(text = "Estado: ${oportunidad.estado}", color = MaterialTheme.colorScheme.primary)
-        }
-    }
-}
