@@ -3,7 +3,7 @@ package cl.duoc.gestionmovil.ui.oportunidad
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import cl.duoc.gestionmovil.data.OportunidadDao
+import cl.duoc.gestionmovil.data.OportunidadRepository
 import cl.duoc.gestionmovil.model.Oportunidad
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 class OportunidadListViewModel(
-    private val oportunidadDao: OportunidadDao,
+    private val oportunidadRepository: OportunidadRepository,
     private val rolUsuario: String,
     private val nombreUsuario: String
 ) : ViewModel() {
@@ -20,11 +20,11 @@ class OportunidadListViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
-    // 1. Elegimos qué lista traer desde Room según el rol
+    // 1. Elegimos qué lista traer según el rol
     private val flujoBaseDatos = if (rolUsuario == "SUPERVISOR") {
-        oportunidadDao.getAllOportunidades()
+        oportunidadRepository.getAllOportunidades()
     } else {
-        oportunidadDao.obtenerPorResponsable(nombreUsuario)
+        oportunidadRepository.obtenerPorResponsable(nombreUsuario)
     }
 
     // 2. Combinamos esa lista con el buscador
@@ -48,16 +48,15 @@ class OportunidadListViewModel(
     }
 }
 
-// FACTORY recibe el rol y el nombre, y se los pasa al ViewModel
 class OportunidadListViewModelFactory(
-    private val oportunidadDao: OportunidadDao,
+    private val oportunidadRepository: OportunidadRepository,
     private val rolUsuario: String,
     private val nombreUsuario: String
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OportunidadListViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OportunidadListViewModel(oportunidadDao, rolUsuario, nombreUsuario) as T
+            return OportunidadListViewModel(oportunidadRepository, rolUsuario, nombreUsuario) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

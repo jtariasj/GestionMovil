@@ -3,6 +3,7 @@ package cl.duoc.gestionmovil.ui.oportunidad
 import android.app.DatePickerDialog
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
@@ -32,6 +34,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,8 +42,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.gestionmovil.model.PotencialComercial
@@ -63,6 +65,10 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.Calendar
 
+/**
+ * Stateful Composable:
+ * Maneja la recolección de estado, toasts y navegación.
+ */
 @Composable
 fun OportunidadFormScreen(
     modifier: Modifier = Modifier,
@@ -71,29 +77,83 @@ fun OportunidadFormScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    LaunchedEffect(uiState.guardadoExitoso) {
+        if (uiState.guardadoExitoso) {
+            Toast.makeText(context, "Creado exitosamente", Toast.LENGTH_SHORT).show()
+            viewModel.mensajeMostrado()
+            onNavigateBack()
+        }
+    }
+
+    OportunidadFormContent(
+        modifier = modifier,
+        uiState = uiState,
+        onCambiarNombre = viewModel::cambiarNombre,
+        onCambiarTipo = viewModel::cambiarTipo,
+        onCambiarDescripcion = viewModel::cambiarDescripcion,
+        onCambiarFuente = viewModel::cambiarFuente,
+        onCambiarFechaDeteccion = viewModel::cambiarFechaDeteccion,
+        onCambiarFechaTermino = viewModel::cambiarFechaTermino,
+        onCambiarCosto = viewModel::cambiarCosto,
+        onCambiarResponsable = viewModel::cambiarResponsable,
+        onCambiarPrioridad = viewModel::cambiarPrioridad,
+        onCambiarPotencial = viewModel::cambiarPotencial,
+        onCambiarObservaciones = viewModel::cambiarObservaciones,
+        onCambiarFotoPath = viewModel::cambiarFotoPath,
+        onGuardar = viewModel::guardar,
+        onDismissDuplicado = viewModel::mensajeMostrado
+    )
+}
+
+/**
+ * Stateless Composable:
+ * Recibe únicamente el estado del formulario y los callbacks de modificación/guardado.
+ */
+@Composable
+fun OportunidadFormContent(
+    uiState: OportunidadFormUiState,
+    onCambiarNombre: (String) -> Unit,
+    onCambiarTipo: (TipoOportunidad) -> Unit,
+    onCambiarDescripcion: (String) -> Unit,
+    onCambiarFuente: (String) -> Unit,
+    onCambiarFechaDeteccion: (String) -> Unit,
+    onCambiarFechaTermino: (String) -> Unit,
+    onCambiarCosto: (String) -> Unit,
+    onCambiarResponsable: (String) -> Unit,
+    onCambiarPrioridad: (Prioridad) -> Unit,
+    onCambiarPotencial: (PotencialComercial) -> Unit,
+    onCambiarObservaciones: (String) -> Unit,
+    onCambiarFotoPath: (String?) -> Unit,
+    onGuardar: () -> Unit,
+    onDismissDuplicado: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
     val calendario = Calendar.getInstance()
 
     val datePickerDialog = DatePickerDialog(
         context,
         { _, anio, mes, dia ->
             val fechaFormateada = String.format("%02d/%02d/%04d", dia, mes + 1, anio)
-            viewModel.cambiarFechaDeteccion(fechaFormateada)
+            onCambiarFechaDeteccion(fechaFormateada)
         },
         calendario.get(Calendar.YEAR),
         calendario.get(Calendar.MONTH),
         calendario.get(Calendar.DAY_OF_MONTH)
     )
 
-    // Confirmación visual al guardar
-    LaunchedEffect(uiState.guardadoExitoso) {
-        if (uiState.guardadoExitoso) {
-            android.widget.Toast.makeText(context, "Creado exitosamente", android.widget.Toast.LENGTH_SHORT).show()
-            viewModel.mensajeMostrado()
-            onNavigateBack() // Ahora puede navegar de inmediato
-        }
-    }
+    val datePickerTermino = DatePickerDialog(
+        context,
+        { _, anio, mes, dia ->
+            val fechaFormateada = String.format("%02d/%02d/%04d", dia, mes + 1, anio)
+            onCambiarFechaTermino(fechaFormateada)
+        },
+        calendario.get(Calendar.YEAR),
+        calendario.get(Calendar.MONTH),
+        calendario.get(Calendar.DAY_OF_MONTH)
+    )
 
-    // Lanzador de la cámara que guarda el archivo en almacenamiento interno y pasa la ruta al ViewModel
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
@@ -103,7 +163,7 @@ fun OportunidadFormScreen(
                 FileOutputStream(archivo).use { out ->
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
                 }
-                viewModel.cambiarFotoPath(archivo.absolutePath)
+                onCambiarFotoPath(archivo.absolutePath)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -126,7 +186,7 @@ fun OportunidadFormScreen(
 
             CampoFormulario(
                 valor = uiState.nombre,
-                onValorCambia = viewModel::cambiarNombre,
+                onValorCambia = onCambiarNombre,
                 etiqueta = "Nombre de la oportunidad",
                 icono = Icons.Default.Edit,
                 hayError = uiState.errorNombre,
@@ -140,7 +200,7 @@ fun OportunidadFormScreen(
                 opciones = TipoOportunidad.entries,
                 seleccion = uiState.tipo,
                 textoOpcion = { it.etiqueta },
-                onSeleccionar = viewModel::cambiarTipo,
+                onSeleccionar = onCambiarTipo,
                 hayError = uiState.errorTipo,
                 mensajeError = "Seleccione un tipo de oportunidad",
                 modifier = Modifier.fillMaxWidth()
@@ -148,7 +208,7 @@ fun OportunidadFormScreen(
 
             CampoFormulario(
                 valor = uiState.descripcion,
-                onValorCambia = viewModel::cambiarDescripcion,
+                onValorCambia = onCambiarDescripcion,
                 etiqueta = "Descripción",
                 icono = Icons.Default.Description,
                 hayError = uiState.errorDescripcion,
@@ -159,7 +219,7 @@ fun OportunidadFormScreen(
 
             CampoFormulario(
                 valor = uiState.fuente,
-                onValorCambia = viewModel::cambiarFuente,
+                onValorCambia = onCambiarFuente,
                 etiqueta = "Fuente de información",
                 icono = Icons.Default.Public,
                 hayError = uiState.errorFuente,
@@ -194,18 +254,6 @@ fun OportunidadFormScreen(
                 )
             )
 
-            // --- NUEVO CAMPO: FECHA DE TÉRMINO ---
-            val datePickerTermino = DatePickerDialog(
-                context,
-                { _, anio, mes, dia ->
-                    val fechaFormateada = String.format("%02d/%02d/%04d", dia, mes + 1, anio)
-                    viewModel.cambiarFechaTermino(fechaFormateada)
-                },
-                calendario.get(Calendar.YEAR),
-                calendario.get(Calendar.MONTH),
-                calendario.get(Calendar.DAY_OF_MONTH)
-            )
-
             OutlinedTextField(
                 value = uiState.fechaTermino,
                 onValueChange = { },
@@ -230,13 +278,12 @@ fun OportunidadFormScreen(
                 )
             )
 
-            // --- CAMPO COSTO REFERENCIAL ---
             OutlinedTextField(
                 value = uiState.costo,
-                onValueChange = viewModel::cambiarCosto,
+                onValueChange = onCambiarCosto,
                 label = { Text("Costo referencial (CLP)") },
                 leadingIcon = { Icon(imageVector = Icons.Default.AttachMoney, contentDescription = null) },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = uiState.errorCosto != null,
                 supportingText = {
                     if (uiState.errorCosto != null) {
@@ -248,7 +295,7 @@ fun OportunidadFormScreen(
 
             CampoFormulario(
                 valor = uiState.responsable,
-                onValorCambia = viewModel::cambiarResponsable,
+                onValorCambia = onCambiarResponsable,
                 etiqueta = "Responsable interno",
                 icono = Icons.Default.Person,
                 hayError = uiState.errorResponsable,
@@ -262,7 +309,7 @@ fun OportunidadFormScreen(
                 opciones = Prioridad.entries,
                 seleccion = uiState.prioridad,
                 textoOpcion = { it.etiqueta },
-                onSeleccionar = viewModel::cambiarPrioridad,
+                onSeleccionar = onCambiarPrioridad,
                 hayError = uiState.errorPrioridad,
                 mensajeError = "Seleccione una prioridad",
                 modifier = Modifier.fillMaxWidth()
@@ -274,7 +321,7 @@ fun OportunidadFormScreen(
                 opciones = PotencialComercial.entries,
                 seleccion = uiState.potencial,
                 textoOpcion = { it.etiqueta },
-                onSeleccionar = viewModel::cambiarPotencial,
+                onSeleccionar = onCambiarPotencial,
                 hayError = uiState.errorPotencial,
                 mensajeError = "Seleccione el potencial comercial",
                 modifier = Modifier.fillMaxWidth()
@@ -282,7 +329,7 @@ fun OportunidadFormScreen(
 
             CampoFormulario(
                 valor = uiState.observaciones,
-                onValorCambia = viewModel::cambiarObservaciones,
+                onValorCambia = onCambiarObservaciones,
                 etiqueta = "Observaciones",
                 icono = Icons.AutoMirrored.Filled.Notes,
                 hayError = false,
@@ -292,16 +339,15 @@ fun OportunidadFormScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Recurso Nativo: Cámara con persistencia en Room
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
-                    .animateContentSize(), // <-- Crece suavemente cuando aparece la vista previa de la foto
+                    .animateContentSize(),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
-            ){
+            ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -325,7 +371,6 @@ fun OportunidadFormScreen(
                         Text(if (uiState.fotoPath == null) "Tomar Foto" else "Cambiar Foto")
                     }
 
-                    // Muestra la vista previa leyendo el archivo desde uiState.fotoPath
                     uiState.fotoPath?.let { path ->
                         val bitmap = remember(path) { BitmapFactory.decodeFile(path) }
                         if (bitmap != null) {
@@ -345,7 +390,7 @@ fun OportunidadFormScreen(
             }
 
             Button(
-                onClick = { viewModel.guardar() },
+                onClick = onGuardar,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Guardar oportunidad")
@@ -353,12 +398,12 @@ fun OportunidadFormScreen(
         }
 
         if (uiState.errorDuplicado != null) {
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { viewModel.mensajeMostrado() },
+            AlertDialog(
+                onDismissRequest = onDismissDuplicado,
                 title = { Text("Oportunidad duplicada") },
                 text = { Text(uiState.errorDuplicado ?: "La oportunidad ya esta creada.") },
                 confirmButton = {
-                    Button(onClick = { viewModel.mensajeMostrado() }) {
+                    Button(onClick = onDismissDuplicado) {
                         Text("Aceptar")
                     }
                 },

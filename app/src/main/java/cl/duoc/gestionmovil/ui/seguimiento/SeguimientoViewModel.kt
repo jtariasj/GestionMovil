@@ -3,7 +3,7 @@ package cl.duoc.gestionmovil.ui.seguimiento
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import cl.duoc.gestionmovil.data.SeguimientoDao
+import cl.duoc.gestionmovil.data.SeguimientoRepository
 import cl.duoc.gestionmovil.model.Seguimiento
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class SeguimientoViewModel(
-    private val seguimientoDao: SeguimientoDao,
+    private val seguimientoRepository: SeguimientoRepository,
     private val oportunidadId: Int
 ) : ViewModel() {
 
@@ -24,10 +24,7 @@ class SeguimientoViewModel(
 
     private fun cargarHistorial() {
         viewModelScope.launch {
-            // Asume que tu SeguimientoDao tiene un metodo:
-            // @Query("SELECT * FROM seguimientos WHERE idOportunidad = :id ORDER BY fecha DESC")
-            // fun obtenerPorOportunidad(id: Int): Flow<List<Seguimiento>>
-            seguimientoDao.getSeguimientosPorOportunidad(oportunidadId).collect { lista ->
+            seguimientoRepository.getSeguimientosPorOportunidad(oportunidadId).collect { lista ->
                 _historial.value = lista
             }
         }
@@ -47,21 +44,20 @@ class SeguimientoViewModel(
                 tipoGestion = tipoGestion,
                 oportunidadId = oportunidadId
             )
-            seguimientoDao.insert(nuevoSeguimiento)
+            seguimientoRepository.guardar(nuevoSeguimiento)
         }
     }
 }
 
 class SeguimientoViewModelFactory(
-    private val seguimientoDao: SeguimientoDao,
+    private val seguimientoRepository: SeguimientoRepository,
     private val oportunidadId: Int
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SeguimientoViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SeguimientoViewModel(seguimientoDao, oportunidadId) as T
+            return SeguimientoViewModel(seguimientoRepository, oportunidadId) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
-

@@ -27,7 +27,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,33 +36,52 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.gestionmovil.R
-import cl.duoc.gestionmovil.model.RolUsuario
 
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * Stateful Composable (Screen Route):
+ * Se conecta al ViewModel, administra el ciclo de vida y eventos secundarios.
+ */
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (String, String) -> Unit, //recibe dos String (rol y nombre)
+    onLoginSuccess: (String, String) -> Unit,
     viewModel: LoginViewModel
 ) {
-    var correo by remember { mutableStateOf("") }
-    var contrasena by remember { mutableStateOf("") }
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.usuarioLogueado) {
         uiState.usuarioLogueado?.let { usuario ->
-            onLoginSuccess(usuario.rol.name, usuario.nombre) // Enviamos rol y nombre
+            onLoginSuccess(usuario.rol.name, usuario.nombre)
         }
     }
 
     LaunchedEffect(Unit) {
         viewModel.cerrarSesion()
-        correo = ""
-        contrasena = ""
     }
 
+    LoginContent(
+        uiState = uiState,
+        onIniciarSesion = viewModel::iniciarSesion
+    )
+}
+
+/**
+ * Stateless Composable (Content View):
+ * Recibe únicamente el estado y callbacks. Libre de dependencias de ViewModel.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun LoginContent(
+    uiState: LoginUiState,
+    onIniciarSesion: (String, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var correo by remember { mutableStateOf("") }
+    var contrasena by remember { mutableStateOf("") }
+
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
@@ -122,7 +140,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.iniciarSesion(correo, contrasena) },
+            onClick = { onIniciarSesion(correo, contrasena) },
             modifier = Modifier.fillMaxWidth(),
             enabled = correo.isNotBlank() && contrasena.isNotBlank() && !uiState.isLoading
         ) {

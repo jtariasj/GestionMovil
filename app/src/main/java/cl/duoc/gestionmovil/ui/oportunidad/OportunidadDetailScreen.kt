@@ -59,10 +59,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.gestionmovil.model.EstadoOportunidad
+import cl.duoc.gestionmovil.model.Oportunidad
 import cl.duoc.gestionmovil.util.formatearFecha
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Stateful Composable:
+ * Carga el estado del detalle mediante ViewModel.
+ */
 @Composable
 fun OportunidadDetailScreen(
     oportunidadId: Int,
@@ -71,13 +75,41 @@ fun OportunidadDetailScreen(
     onNavigateBack: () -> Unit,
     onIrASeguimiento: (Int) -> Unit
 ) {
-    val context = LocalContext.current
-
     LaunchedEffect(oportunidadId) {
         viewModel.cargarOportunidad(oportunidadId)
     }
 
     val oportunidad by viewModel.oportunidad.collectAsStateWithLifecycle()
+
+    OportunidadDetailContent(
+        oportunidadId = oportunidadId,
+        rolUsuario = rolUsuario,
+        oportunidad = oportunidad,
+        onNavigateBack = onNavigateBack,
+        onEliminarOportunidad = { viewModel.eliminarOportunidad(onNavigateBack) },
+        onReasignarOportunidad = viewModel::reasignarOportunidad,
+        onActualizarEstado = viewModel::actualizarEstado,
+        onIrASeguimiento = onIrASeguimiento
+    )
+}
+
+/**
+ * Stateless Composable:
+ * Renderiza la interfaz de usuario desacoplada de ViewModel.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OportunidadDetailContent(
+    oportunidadId: Int,
+    rolUsuario: String,
+    oportunidad: Oportunidad?,
+    onNavigateBack: () -> Unit,
+    onEliminarOportunidad: () -> Unit,
+    onReasignarOportunidad: (String) -> Unit,
+    onActualizarEstado: (EstadoOportunidad) -> Unit,
+    onIrASeguimiento: (Int) -> Unit
+) {
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -89,7 +121,7 @@ fun OportunidadDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.eliminarOportunidad(onNavigateBack) }) {
+                    IconButton(onClick = onEliminarOportunidad) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Eliminar",
@@ -110,7 +142,7 @@ fun OportunidadDetailScreen(
                 CircularProgressIndicator()
             }
         } else {
-            val item = oportunidad!!
+            val item = oportunidad
 
             Column(
                 modifier = Modifier
@@ -120,7 +152,6 @@ fun OportunidadDetailScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Tarjeta Principal de Información
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -226,7 +257,6 @@ fun OportunidadDetailScreen(
                     }
                 }
 
-                // Recurso Nativo 1: Evidencia Fotográfica (Cámara)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -280,7 +310,6 @@ fun OportunidadDetailScreen(
                     }
                 }
 
-                // Recurso Nativo 2: Calendario del Dispositivo
                 Button(
                     onClick = {
                         val inicioMillis = if (item.fechaDeteccion > 0) item.fechaDeteccion else System.currentTimeMillis()
@@ -326,7 +355,6 @@ fun OportunidadDetailScreen(
                     Text("Agendar en Calendario Nativo")
                 }
 
-                // Botón para ir a la Bitácora de Seguimientos
                 Button(
                     onClick = { onIrASeguimiento(oportunidadId) },
                     modifier = Modifier.fillMaxWidth(),
@@ -337,7 +365,6 @@ fun OportunidadDetailScreen(
                     Text("Ver Historial de Seguimientos (Bitácora)")
                 }
 
-                // SECCIÓN EXCLUSIVA PARA EL SUPERVISOR
                 if (rolUsuario.equals("Supervisor", ignoreCase = true)) {
                     var expandido by remember { mutableStateOf(false) }
                     val ejecutivos = listOf("Carlos Ruiz", "María Soto", "Pedro Gómez")
@@ -388,7 +415,7 @@ fun OportunidadDetailScreen(
                                             onClick = {
                                                 ejecutivoSeleccionado = nombre
                                                 expandido = false
-                                                viewModel.reasignarOportunidad(nombre)
+                                                onReasignarOportunidad(nombre)
                                             }
                                         )
                                     }
@@ -409,7 +436,7 @@ fun OportunidadDetailScreen(
                             ) {
                                 Button(
                                     onClick = {
-                                        viewModel.actualizarEstado(EstadoOportunidad.PARTICIPACION_CONFIRMADA)
+                                        onActualizarEstado(EstadoOportunidad.PARTICIPACION_CONFIRMADA)
                                     },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColors(
@@ -421,7 +448,7 @@ fun OportunidadDetailScreen(
 
                                 OutlinedButton(
                                     onClick = {
-                                        viewModel.actualizarEstado(EstadoOportunidad.DESCARTADA)
+                                        onActualizarEstado(EstadoOportunidad.DESCARTADA)
                                     },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.outlinedButtonColors(

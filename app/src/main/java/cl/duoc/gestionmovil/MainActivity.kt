@@ -8,6 +8,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import cl.duoc.gestionmovil.data.AppDatabase
+import cl.duoc.gestionmovil.data.ContactoRepository
+import cl.duoc.gestionmovil.data.OportunidadRepository
+import cl.duoc.gestionmovil.data.OrganizacionRepository
+import cl.duoc.gestionmovil.data.SeguimientoRepository
+import cl.duoc.gestionmovil.data.UsuarioRepository
 import cl.duoc.gestionmovil.ui.navegacion.AppNavGraph
 import cl.duoc.gestionmovil.ui.theme.GestionMovilTheme
 
@@ -15,13 +20,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Inicializamos la base de datos de Room (Patrón Singleton)
+        // Inicializamos la base de datos de Room y los Repositorios
         val database = AppDatabase.getDatabase(applicationContext)
-        val usuarioDao = database.usuarioDao()
-        val oportunidadDao = database.oportunidadDao()
-        val seguimientoDao = database.seguimientoDao()
-        val organizacionDao = database.organizacionDao()
-        val contactoDao = database.contactoDao()
+        val usuarioRepository = UsuarioRepository(database.usuarioDao())
+        val oportunidadRepository = OportunidadRepository(database.oportunidadDao())
+        val seguimientoRepository = SeguimientoRepository(database.seguimientoDao())
+        val organizacionRepository = OrganizacionRepository(database.organizacionDao())
+        val contactoRepository = ContactoRepository(database.contactoDao())
 
         setContent {
             GestionMovilTheme {
@@ -29,13 +34,12 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // 2. Invocamos el grafo de navegación modularizado
                     AppNavGraph(
-                        usuarioDao = usuarioDao,
-                        oportunidadDao = oportunidadDao,
-                        seguimientoDao = seguimientoDao,
-                        organizacionDao = organizacionDao,
-                        contactoDao = contactoDao
+                        usuarioRepository = usuarioRepository,
+                        oportunidadRepository = oportunidadRepository,
+                        seguimientoRepository = seguimientoRepository,
+                        organizacionRepository = organizacionRepository,
+                        contactoRepository = contactoRepository
                     )
                 }
             }

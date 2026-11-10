@@ -3,26 +3,16 @@ package cl.duoc.gestionmovil.ui.organizacion
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import cl.duoc.gestionmovil.data.OrganizacionDao
+import cl.duoc.gestionmovil.data.OrganizacionRepository
 import cl.duoc.gestionmovil.model.Organizacion
-import cl.duoc.gestionmovil.util.validarRut // Importamos la utilidad
+import cl.duoc.gestionmovil.util.validarRut
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// CREAMOS EL ESTADO PARA LA UI
-data class OrganizacionUiState(
-    val nombre: String = "",
-    val rut: String = "",
-    val direccion: String = "",
-    val errorNombre: String? = null,
-    val errorRut: String? = null,
-    val guardadoExitoso: Boolean = false
-)
-
-class OrganizacionViewModel(private val organizacionDao: OrganizacionDao) : ViewModel() {
+class OrganizacionViewModel(private val organizacionRepository: OrganizacionRepository) : ViewModel() {
 
     private val _organizaciones = MutableStateFlow<List<Organizacion>>(emptyList())
     val organizaciones: StateFlow<List<Organizacion>> = _organizaciones.asStateFlow()
@@ -32,13 +22,12 @@ class OrganizacionViewModel(private val organizacionDao: OrganizacionDao) : View
 
     init {
         viewModelScope.launch {
-            organizacionDao.getAllOrganizaciones().collect { lista ->
+            organizacionRepository.getAllOrganizaciones().collect { lista ->
                 _organizaciones.value = lista
             }
         }
     }
 
-    // Actualizadores de estado
     fun cambiarNombre(valor: String) = _uiState.update { it.copy(nombre = valor, errorNombre = null) }
     fun cambiarRut(valor: String) = _uiState.update { it.copy(rut = valor, errorRut = null) }
     fun cambiarDireccion(valor: String) = _uiState.update { it.copy(direccion = valor) }
@@ -56,7 +45,6 @@ class OrganizacionViewModel(private val organizacionDao: OrganizacionDao) : View
             isValid = false
         }
 
-        // VALIDACIÓN DEL RUT
         if (estado.rut.isBlank() || !validarRut(estado.rut)) {
             errRut = "Ingrese un RUT válido (8 a 9 caracteres)"
             isValid = false
@@ -81,18 +69,18 @@ class OrganizacionViewModel(private val organizacionDao: OrganizacionDao) : View
                     rut = rutTrim,
                     direccion = estado.direccion.trim()
                 )
-                organizacionDao.insert(nuevaOrg)
+                organizacionRepository.guardar(nuevaOrg)
                 _uiState.value = OrganizacionUiState(guardadoExitoso = true)
             }
         }
     }
 }
 
-class OrganizacionViewModelFactory(private val organizacionDao: OrganizacionDao) : ViewModelProvider.Factory {
+class OrganizacionViewModelFactory(private val organizacionRepository: OrganizacionRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OrganizacionViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OrganizacionViewModel(organizacionDao) as T
+            return OrganizacionViewModel(organizacionRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

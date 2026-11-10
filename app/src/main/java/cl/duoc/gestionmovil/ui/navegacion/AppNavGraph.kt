@@ -12,7 +12,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import cl.duoc.gestionmovil.data.*
+import cl.duoc.gestionmovil.data.ContactoRepository
+import cl.duoc.gestionmovil.data.OportunidadRepository
+import cl.duoc.gestionmovil.data.OrganizacionRepository
+import cl.duoc.gestionmovil.data.SeguimientoRepository
+import cl.duoc.gestionmovil.data.UsuarioRepository
 import cl.duoc.gestionmovil.ui.contacto.ContactoScreen
 import cl.duoc.gestionmovil.ui.contacto.ContactoViewModel
 import cl.duoc.gestionmovil.ui.contacto.ContactoViewModelFactory
@@ -20,7 +24,15 @@ import cl.duoc.gestionmovil.ui.dashboard.DashboardScreen
 import cl.duoc.gestionmovil.ui.login.LoginScreen
 import cl.duoc.gestionmovil.ui.login.LoginViewModel
 import cl.duoc.gestionmovil.ui.login.LoginViewModelFactory
-import cl.duoc.gestionmovil.ui.oportunidad.*
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadDetailScreen
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadDetailViewModel
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadDetailViewModelFactory
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadFormScreen
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadFormViewModel
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadFormViewModelFactory
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadListScreen
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadListViewModel
+import cl.duoc.gestionmovil.ui.oportunidad.OportunidadListViewModelFactory
 import cl.duoc.gestionmovil.ui.organizacion.OrganizacionScreen
 import cl.duoc.gestionmovil.ui.organizacion.OrganizacionViewModel
 import cl.duoc.gestionmovil.ui.organizacion.OrganizacionViewModelFactory
@@ -30,11 +42,11 @@ import cl.duoc.gestionmovil.ui.seguimiento.SeguimientoViewModelFactory
 
 @Composable
 fun AppNavGraph(
-    usuarioDao: UsuarioDao,
-    oportunidadDao: OportunidadDao,
-    seguimientoDao: SeguimientoDao,
-    organizacionDao: OrganizacionDao,
-    contactoDao: ContactoDao
+    usuarioRepository: UsuarioRepository,
+    oportunidadRepository: OportunidadRepository,
+    seguimientoRepository: SeguimientoRepository,
+    organizacionRepository: OrganizacionRepository,
+    contactoRepository: ContactoRepository
 ) {
     val navController = rememberNavController()
 
@@ -57,7 +69,7 @@ fun AppNavGraph(
         // Ruta 1: Login
         composable(Destinos.LOGIN) {
             val loginViewModel: LoginViewModel = viewModel(
-                factory = LoginViewModelFactory(usuarioDao)
+                factory = LoginViewModelFactory(usuarioRepository)
             )
             LoginScreen(
                 viewModel = loginViewModel,
@@ -93,7 +105,7 @@ fun AppNavGraph(
             val nombre = backStackEntry.arguments?.getString("nombre") ?: ""
 
             val listViewModel: OportunidadListViewModel = viewModel(
-                factory = OportunidadListViewModelFactory(oportunidadDao, rol, nombre)
+                factory = OportunidadListViewModelFactory(oportunidadRepository, rol, nombre)
             )
             OportunidadListScreen(
                 viewModel = listViewModel,
@@ -106,7 +118,7 @@ fun AppNavGraph(
         // Ruta 4: Formulario de Oportunidad
         composable(Destinos.NUEVA_OPORTUNIDAD) {
             val formViewModel: OportunidadFormViewModel = viewModel(
-                factory = OportunidadFormViewModelFactory(oportunidadDao)
+                factory = OportunidadFormViewModelFactory(oportunidadRepository)
             )
             OportunidadFormScreen(
                 viewModel = formViewModel,
@@ -126,7 +138,7 @@ fun AppNavGraph(
             val rol = backStackEntry.arguments?.getString("rol") ?: "EJECUTIVO"
 
             val detailViewModel: OportunidadDetailViewModel = viewModel(
-                factory = OportunidadDetailViewModelFactory(oportunidadDao)
+                factory = OportunidadDetailViewModelFactory(oportunidadRepository)
             )
             OportunidadDetailScreen(
                 oportunidadId = id,
@@ -149,7 +161,7 @@ fun AppNavGraph(
             val id = backStackEntry.arguments?.getInt("oportunidadId") ?: 0
 
             val seguimientoViewModel: SeguimientoViewModel = viewModel(
-                factory = SeguimientoViewModelFactory(seguimientoDao, id)
+                factory = SeguimientoViewModelFactory(seguimientoRepository, id)
             )
             SeguimientoScreen(
                 viewModel = seguimientoViewModel,
@@ -160,7 +172,7 @@ fun AppNavGraph(
         // Ruta 7: Organizaciones
         composable(Destinos.ORGANIZACIONES) {
             val orgViewModel: OrganizacionViewModel = viewModel(
-                factory = OrganizacionViewModelFactory(organizacionDao)
+                factory = OrganizacionViewModelFactory(organizacionRepository)
             )
             OrganizacionScreen(
                 viewModel = orgViewModel,
@@ -179,7 +191,7 @@ fun AppNavGraph(
             val orgId = backStackEntry.arguments?.getInt("orgId") ?: 0
 
             val contactoViewModel: ContactoViewModel = viewModel(
-                factory = ContactoViewModelFactory(contactoDao, orgId)
+                factory = ContactoViewModelFactory(contactoRepository, orgId)
             )
             ContactoScreen(
                 viewModel = contactoViewModel,

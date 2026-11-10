@@ -3,9 +3,9 @@ package cl.duoc.gestionmovil.ui.contacto
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import cl.duoc.gestionmovil.data.ContactoDao
+import cl.duoc.gestionmovil.data.ContactoRepository
 import cl.duoc.gestionmovil.model.Contacto
-import cl.duoc.gestionmovil.util.validarCorreo // Asegúrate de tener estas funciones en tu archivo de utilidades
+import cl.duoc.gestionmovil.util.validarCorreo
 import cl.duoc.gestionmovil.util.validarTelefono
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,20 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class ContactoUiState(
-    val nombre: String = "",
-    val cargo: String = "",
-    val telefono: String = "",
-    val correo: String = "",
-    val errorNombre: String? = null,
-    val errorCargo: String? = null,
-    val errorTelefono: String? = null,
-    val errorCorreo: String? = null,
-    val guardadoExitoso: Boolean = false
-)
-
 class ContactoViewModel(
-    private val contactoDao: ContactoDao,
+    private val contactoRepository: ContactoRepository,
     private val organizacionId: Int
 ) : ViewModel() {
 
@@ -38,7 +26,7 @@ class ContactoViewModel(
 
     init {
         viewModelScope.launch {
-            contactoDao.getContactosPorOrganizacion(organizacionId).collect { lista ->
+            contactoRepository.getContactosPorOrganizacion(organizacionId).collect { lista ->
                 _contactos.value = lista
             }
         }
@@ -62,13 +50,11 @@ class ContactoViewModel(
         if (estado.nombre.isBlank()) { errNombre = "El nombre es obligatorio"; isValid = false }
         if (estado.cargo.isBlank()) { errCargo = "El cargo es obligatorio"; isValid = false }
 
-        // APLICANDO NUEVA VALIDACIÓN DE TELÉFONO
         if (estado.telefono.isBlank() || !validarTelefono(estado.telefono)) {
             errTelefono = "Ingrese un teléfono válido (máx 20 caracteres)"
             isValid = false
         }
 
-        // APLICANDO NUEVA VALIDACIÓN DE CORREO
         if (estado.correo.isBlank() || !validarCorreo(estado.correo)) {
             errCorreo = "El correo debe terminar en @gmail.com o @test.com"
             isValid = false
@@ -91,13 +77,15 @@ class ContactoViewModel(
 
         if (isValid) {
             viewModelScope.launch {
-                contactoDao.insert(Contacto(
-                    nombre = nombreTrim,
-                    cargo = cargoTrim,
-                    telefono = estado.telefono.trim(),
-                    correo = correoTrim,
-                    organizacionId = organizacionId
-                ))
+                contactoRepository.guardar(
+                    Contacto(
+                        nombre = nombreTrim,
+                        cargo = cargoTrim,
+                        telefono = estado.telefono.trim(),
+                        correo = correoTrim,
+                        organizacionId = organizacionId
+                    )
+                )
                 _uiState.value = ContactoUiState(guardadoExitoso = true)
             }
         }
@@ -105,13 +93,13 @@ class ContactoViewModel(
 }
 
 class ContactoViewModelFactory(
-    private val contactoDao: ContactoDao,
+    private val contactoRepository: ContactoRepository,
     private val organizacionId: Int
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ContactoViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ContactoViewModel(contactoDao, organizacionId) as T
+            return ContactoViewModel(contactoRepository, organizacionId) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

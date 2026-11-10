@@ -1,22 +1,34 @@
 package cl.duoc.gestionmovil.ui.oportunidad
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.lazy.items
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cl.duoc.gestionmovil.model.Oportunidad
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OportunidadCard(
-    oportunidad: cl.duoc.gestionmovil.model.Oportunidad,
+    oportunidad: Oportunidad,
     onClick: (Int) -> Unit
 ) {
     Card(
@@ -28,21 +40,48 @@ fun OportunidadCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = oportunidad.nombre, style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(4.dp))
-            // Usamos colores semánticos como pide el checklist (IE: MaterialTheme.colorScheme.primary)
-            Text(text = "Estado: ${oportunidad.estado}", color = MaterialTheme.colorScheme.primary)
+            Text(text = "Estado: ${oportunidad.estado.etiqueta}", color = MaterialTheme.colorScheme.primary)
         }
     }
 }
+
+/**
+ * Stateful Composable (Screen Route):
+ * Conecta con el ViewModel y recolecta el estado reactivo.
+ */
 @Composable
 fun OportunidadListScreen(
     viewModel: OportunidadListViewModel,
-    onItemClick: (Int) -> Unit // Para navegar al detalle
+    onItemClick: (Int) -> Unit
 ) {
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val oportunidades by viewModel.oportunidadesFiltradas.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val oportunidades by viewModel.oportunidadesFiltradas.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    OportunidadListContent(
+        searchQuery = searchQuery,
+        oportunidades = oportunidades,
+        onSearchQueryChange = viewModel::onSearchQueryChange,
+        onItemClick = onItemClick
+    )
+}
 
+/**
+ * Stateless Composable (Content View):
+ * Muestra el contenido desacoplado de dependencias de ViewModel.
+ */
+@Composable
+fun OportunidadListContent(
+    searchQuery: String,
+    oportunidades: List<Oportunidad>,
+    onSearchQueryChange: (String) -> Unit,
+    onItemClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text(
             text = "Oportunidades",
             style = MaterialTheme.typography.headlineMedium,
@@ -52,7 +91,7 @@ fun OportunidadListScreen(
         // Barra de Búsqueda
         OutlinedTextField(
             value = searchQuery,
-            onValueChange = viewModel::onSearchQueryChange,
+            onValueChange = onSearchQueryChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Buscar oportunidad...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") }
@@ -72,7 +111,7 @@ fun OportunidadListScreen(
             } else {
                 items(
                     items = oportunidades,
-                    key = {it.id}
+                    key = { it.id }
                 ) { oportunidad ->
                     Box(modifier = Modifier.animateItem()) {
                         OportunidadCard(
@@ -85,4 +124,3 @@ fun OportunidadListScreen(
         }
     }
 }
-

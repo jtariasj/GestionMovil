@@ -3,7 +3,7 @@ package cl.duoc.gestionmovil.ui.oportunidad
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import cl.duoc.gestionmovil.data.OportunidadDao
+import cl.duoc.gestionmovil.data.OportunidadRepository
 import cl.duoc.gestionmovil.model.Oportunidad
 import cl.duoc.gestionmovil.model.PotencialComercial
 import cl.duoc.gestionmovil.model.Prioridad
@@ -11,9 +11,7 @@ import cl.duoc.gestionmovil.model.TipoOportunidad
 import cl.duoc.gestionmovil.util.formatearFecha
 import cl.duoc.gestionmovil.util.parsearFecha
 import cl.duoc.gestionmovil.util.validarContieneLetras
-import cl.duoc.gestionmovil.util.validarDescripcion
 import cl.duoc.gestionmovil.util.validarFechaDeteccion
-import cl.duoc.gestionmovil.util.validarFuente
 import cl.duoc.gestionmovil.util.validarNombreOportunidad
 import cl.duoc.gestionmovil.util.validarResponsable
 import cl.duoc.gestionmovil.util.validarSeleccion
@@ -23,12 +21,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : ViewModel() {
+class OportunidadFormViewModel(private val oportunidadRepository: OportunidadRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(estadoInicial())
     val uiState: StateFlow<OportunidadFormUiState> = _uiState.asStateFlow()
 
-    // La fecha de detección parte con el día de hoy
     private fun estadoInicial() = OportunidadFormUiState(
         fechaDeteccion = formatearFecha(System.currentTimeMillis())
     )
@@ -47,7 +44,6 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
     fun mensajeMostrado() { _uiState.update { it.copy(guardadoExitoso = false, errorDuplicado = null) } }
     fun cambiarFotoPath(path: String?) { _uiState.update { it.copy(fotoPath = path) } }
 
-    // Acción del formulario
     fun guardar() {
         val estado = _uiState.value
 
@@ -60,7 +56,6 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
         val errorPrioridad = !validarSeleccion(estado.prioridad)
         val errorPotencial = !validarSeleccion(estado.potencial)
 
-        // REGLA DE NEGOCIO 1: Costos no negativos
         var msgErrorCosto: String? = null
         if (estado.costo.isBlank()) {
             msgErrorCosto = "El costo referencial es obligatorio."
@@ -73,16 +68,14 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
             }
         }
 
-        // REGLA DE NEGOCIO 2: Fechas coherentes (Término no puede ser antes de inicio/detección)
         var msgErrorFechaTermino: String? = null
         if (estado.fechaTermino.isBlank()) {
             msgErrorFechaTermino = "La fecha de término es obligatoria."
         } else {
-            // Intentamos validar que la fecha de término sea posterior a la de inicio
             val fechaInicio = parsearFecha(estado.fechaDeteccion)
             val fechaFin = parsearFecha(estado.fechaTermino)
             if (fechaInicio != null && fechaFin != null) {
-                if (fechaFin < fechaInicio) { // Comparamos los milisegundos (Long)
+                if (fechaFin < fechaInicio) {
                     msgErrorFechaTermino = "La fecha de término no puede ser anterior al inicio."
                 }
             }
@@ -112,7 +105,7 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
         if (formularioValido) {
             val nombreTrim = estado.nombre.trim()
             viewModelScope.launch {
-                val existentes = oportunidadDao.obtenerPorNombre(nombreTrim)
+                val existentes = oportunidadRepository.obtenerPorNombre(nombreTrim)
                 if (existentes.isNotEmpty()) {
                     _uiState.update {
                         it.copy(
@@ -144,7 +137,7 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
                         observaciones = estado.observaciones.trim(),
                         fotoPath = estado.fotoPath
                     )
-                    oportunidadDao.insertar(oportunidad)
+                    oportunidadRepository.guardar(oportunidad)
                     _uiState.value = estadoInicial().copy(guardadoExitoso = true)
                 }
             }
@@ -152,11 +145,11 @@ class OportunidadFormViewModel(private val oportunidadDao: OportunidadDao) : Vie
     }
 }
 
-class OportunidadFormViewModelFactory(private val oportunidadDao: OportunidadDao) : ViewModelProvider.Factory {
+class OportunidadFormViewModelFactory(private val oportunidadRepository: OportunidadRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OportunidadFormViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OportunidadFormViewModel(oportunidadDao) as T
+            return OportunidadFormViewModel(oportunidadRepository) as T
         }
         throw IllegalArgumentException("Clase ViewModel desconocida")
     }
