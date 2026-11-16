@@ -70,7 +70,7 @@ fun DashboardScreen(
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-
+            //Separacion usuarios
             if (rolUsuario == "SUPERVISOR") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),

@@ -55,7 +55,7 @@ class OportunidadFormViewModel(private val oportunidadRepository: OportunidadRep
         val errorResponsable = !validarResponsable(estado.responsable)
         val errorPrioridad = !validarSeleccion(estado.prioridad)
         val errorPotencial = !validarSeleccion(estado.potencial)
-
+        //Reglas de negocio
         var msgErrorCosto: String? = null
         if (estado.costo.isBlank()) {
             msgErrorCosto = "El costo referencial es obligatorio."

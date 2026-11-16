@@ -49,7 +49,7 @@ fun AppNavGraph(
     contactoRepository: ContactoRepository
 ) {
     val navController = rememberNavController()
-
+// Extraccion para modularizar el navhost de mainactivity
     NavHost(
         navController = navController,
         startDestination = Destinos.LOGIN,

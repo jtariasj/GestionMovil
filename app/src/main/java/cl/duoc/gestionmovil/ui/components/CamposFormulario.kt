@@ -59,6 +59,7 @@ fun CampoFormulario(
                 Icon(imageVector = icono, contentDescription = etiqueta, tint = colorIcono)
             },
             trailingIcon = {
+                //Animacion para icono de error
                 AnimatedVisibility(
                     visible = hayError,
                     enter = scaleIn(animationSpec = tween(1050)) + fadeIn(),
