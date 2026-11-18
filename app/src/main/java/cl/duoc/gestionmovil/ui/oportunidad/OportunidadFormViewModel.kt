@@ -1,0 +1,156 @@
+package cl.duoc.gestionmovil.ui.oportunidad
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import cl.duoc.gestionmovil.data.OportunidadRepository
+import cl.duoc.gestionmovil.model.Oportunidad
+import cl.duoc.gestionmovil.model.PotencialComercial
+import cl.duoc.gestionmovil.model.Prioridad
+import cl.duoc.gestionmovil.model.TipoOportunidad
+import cl.duoc.gestionmovil.util.formatearFecha
+import cl.duoc.gestionmovil.util.parsearFecha
+import cl.duoc.gestionmovil.util.validarContieneLetras
+import cl.duoc.gestionmovil.util.validarFechaDeteccion
+import cl.duoc.gestionmovil.util.validarNombreOportunidad
+import cl.duoc.gestionmovil.util.validarResponsable
+import cl.duoc.gestionmovil.util.validarSeleccion
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class OportunidadFormViewModel(private val oportunidadRepository: OportunidadRepository) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(estadoInicial())
+    val uiState: StateFlow<OportunidadFormUiState> = _uiState.asStateFlow()
+
+    private fun estadoInicial() = OportunidadFormUiState(
+        fechaDeteccion = formatearFecha(System.currentTimeMillis())
+    )
+
+    fun cambiarNombre(valor: String) { _uiState.update { it.copy(nombre = valor, errorNombre = false, errorDuplicado = null) } }
+    fun cambiarTipo(valor: TipoOportunidad) { _uiState.update { it.copy(tipo = valor, errorTipo = false, errorDuplicado = null) } }
+    fun cambiarDescripcion(valor: String) { _uiState.update { it.copy(descripcion = valor, errorDescripcion = false, errorDuplicado = null) } }
+    fun cambiarFuente(valor: String) { _uiState.update { it.copy(fuente = valor, errorFuente = false, errorDuplicado = null) } }
+    fun cambiarFechaDeteccion(valor: String) { _uiState.update { it.copy(fechaDeteccion = valor, errorFecha = false, errorDuplicado = null) } }
+    fun cambiarResponsable(valor: String) { _uiState.update { it.copy(responsable = valor, errorResponsable = false, errorDuplicado = null) } }
+    fun cambiarPrioridad(valor: Prioridad) { _uiState.update { it.copy(prioridad = valor, errorPrioridad = false, errorDuplicado = null) } }
+    fun cambiarPotencial(valor: PotencialComercial) { _uiState.update { it.copy(potencial = valor, errorPotencial = false, errorDuplicado = null) } }
+    fun cambiarObservaciones(valor: String) { _uiState.update { it.copy(observaciones = valor, errorDuplicado = null) } }
+    fun cambiarCosto(valor: String) { _uiState.update { it.copy(costo = valor, errorCosto = null, errorDuplicado = null) } }
+    fun cambiarFechaTermino(valor: String) { _uiState.update { it.copy(fechaTermino = valor, errorFechaTermino = null, errorDuplicado = null) } }
+    fun mensajeMostrado() { _uiState.update { it.copy(guardadoExitoso = false, errorDuplicado = null) } }
+    fun cambiarFotoPath(path: String?) { _uiState.update { it.copy(fotoPath = path) } }
+
+    fun guardar() {
+        val estado = _uiState.value
+
+        val errorNombre = !validarNombreOportunidad(estado.nombre)
+        val errorTipo = !validarSeleccion(estado.tipo)
+        val errorDescripcion = !validarContieneLetras(estado.descripcion)
+        val errorFuente = !validarContieneLetras(estado.fuente)
+        val errorFecha = !validarFechaDeteccion(estado.fechaDeteccion)
+        val errorResponsable = !validarResponsable(estado.responsable)
+        val errorPrioridad = !validarSeleccion(estado.prioridad)
+        val errorPotencial = !validarSeleccion(estado.potencial)
+        //Reglas de negocio
+        var msgErrorCosto: String? = null
+        if (estado.costo.isBlank()) {
+            msgErrorCosto = "El costo referencial es obligatorio."
+        } else {
+            val costoNum = estado.costo.toDoubleOrNull()
+            if (costoNum == null) {
+                msgErrorCosto = "Debe ser un valor numérico válido."
+            } else if (costoNum < 0) {
+                msgErrorCosto = "El costo no puede ser un valor negativo."
+            }
+        }
+
+        var msgErrorFechaTermino: String? = null
+        if (estado.fechaTermino.isBlank()) {
+            msgErrorFechaTermino = "La fecha de término es obligatoria."
+        } else {
+            val fechaInicio = parsearFecha(estado.fechaDeteccion)
+            val fechaFin = parsearFecha(estado.fechaTermino)
+            if (fechaInicio != null && fechaFin != null) {
+                if (fechaFin < fechaInicio) {
+                    msgErrorFechaTermino = "La fecha de término no puede ser anterior al inicio."
+                }
+            }
+        }
+
+        _uiState.update {
+            it.copy(
+                errorNombre = errorNombre,
+                errorTipo = errorTipo,
+                errorDescripcion = errorDescripcion,
+                errorFuente = errorFuente,
+                errorFecha = errorFecha,
+                errorResponsable = errorResponsable,
+                errorPrioridad = errorPrioridad,
+                errorPotencial = errorPotencial,
+                errorCosto = msgErrorCosto,
+                errorFechaTermino = msgErrorFechaTermino,
+                errorDuplicado = null
+            )
+        }
+
+        val formularioValido =
+            !errorNombre && !errorTipo && !errorDescripcion && !errorFuente &&
+                    !errorFecha && !errorResponsable && !errorPrioridad && !errorPotencial &&
+                    msgErrorCosto == null && msgErrorFechaTermino == null
+
+        if (formularioValido) {
+            val nombreTrim = estado.nombre.trim()
+            viewModelScope.launch {
+                val existentes = oportunidadRepository.obtenerPorNombre(nombreTrim)
+                if (existentes.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            errorNombre = true,
+                            errorTipo = true,
+                            errorDescripcion = true,
+                            errorFuente = true,
+                            errorFecha = true,
+                            errorResponsable = true,
+                            errorPrioridad = true,
+                            errorPotencial = true,
+                            errorCosto = "La oportunidad ya está creada",
+                            errorFechaTermino = null,
+                            errorDuplicado = "La oportunidad ya está creada."
+                        )
+                    }
+                } else {
+                    val ahora = System.currentTimeMillis()
+                    val oportunidad = Oportunidad(
+                        nombre = nombreTrim,
+                        tipo = estado.tipo!!,
+                        descripcion = estado.descripcion.trim(),
+                        fuenteInformacion = estado.fuente.trim(),
+                        fechaDeteccion = parsearFecha(estado.fechaDeteccion)!!,
+                        responsable = estado.responsable.trim(),
+                        prioridad = estado.prioridad!!,
+                        potencialComercial = estado.potencial!!,
+                        fechaActualizacion = ahora,
+                        observaciones = estado.observaciones.trim(),
+                        fotoPath = estado.fotoPath
+                    )
+                    oportunidadRepository.guardar(oportunidad)
+                    _uiState.value = estadoInicial().copy(guardadoExitoso = true)
+                }
+            }
+        }
+    }
+}
+
+class OportunidadFormViewModelFactory(private val oportunidadRepository: OportunidadRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(OportunidadFormViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return OportunidadFormViewModel(oportunidadRepository) as T
+        }
+        throw IllegalArgumentException("Clase ViewModel desconocida")
+    }
+}
