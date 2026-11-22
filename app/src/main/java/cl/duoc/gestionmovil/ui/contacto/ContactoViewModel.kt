@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.ContactoRepository
 import cl.duoc.gestionmovil.model.Contacto
-import cl.duoc.gestionmovil.network.ContactoRequest
 import cl.duoc.gestionmovil.util.validarCorreo
 import cl.duoc.gestionmovil.util.validarTelefono
 import kotlinx.coroutines.CancellationException
@@ -47,14 +46,15 @@ class ContactoViewModel(
         viewModelScope.launch {
             _listUiState.value = ContactoListUiState.Cargando
             try {
-                val lista = contactoRepository.obtenerContactosPorOrganizacionApi(organizacionId)
-                _contactos.value = lista
-                _listUiState.value = ContactoListUiState.Exito(lista)
+                contactoRepository.getContactosPorOrganizacion(organizacionId).collect { lista ->
+                    _contactos.value = lista
+                    _listUiState.value = ContactoListUiState.Exito(lista)
+                }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _listUiState.value = ContactoListUiState.Error(
-                    "No se pudieron cargar los contactos desde el servidor."
+                    "No se pudieron cargar los contactos."
                 )
             }
         }
@@ -70,82 +70,61 @@ class ContactoViewModel(
         if (_guardando.value) return
 
         val estado = _uiState.value
-        var isValid = true
-
-        var errNombre: String? = null
-        var errCargo: String? = null
-        var errTelefono: String? = null
-        var errCorreo: String? = null
-
-        if (estado.nombre.isBlank()) { errNombre = "El nombre es obligatorio"; isValid = false }
-        if (estado.cargo.isBlank()) { errCargo = "El cargo es obligatorio"; isValid = false }
-
-        if (estado.telefono.isBlank() || !validarTelefono(estado.telefono)) {
-            errTelefono = "Ingrese un teléfono válido (máx 20 caracteres)"
-            isValid = false
-        }
-
-        if (estado.correo.isBlank() || !validarCorreo(estado.correo)) {
-            errCorreo = "El correo debe terminar en @gmail.com o @test.com"
-            isValid = false
-        }
-
-        val correoTrim = estado.correo.trim()
         val nombreTrim = estado.nombre.trim()
         val cargoTrim = estado.cargo.trim()
-        val duplicado = _contactos.value.any {
+        val telefonoTrim = estado.telefono.trim()
+        val correoTrim = estado.correo.trim()
+
+        val errNombre = if (nombreTrim.isBlank()) "El nombre es obligatorio" else null
+        val errCargo = if (cargoTrim.isBlank()) "El cargo es obligatorio" else null
+        val errTelefono = if (telefonoTrim.isBlank() || !validarTelefono(telefonoTrim)) {
+            "Ingrese un teléfono válido (máx 20 caracteres)"
+        } else null
+        val errCorreo = if (correoTrim.isBlank() || !validarCorreo(correoTrim)) {
+            "El correo debe terminar en @gmail.com o @test.com"
+        } else null
+
+        val listaActual = (_listUiState.value as? ContactoListUiState.Exito)?.contactos ?: _contactos.value
+        val duplicado = listaActual.any {
             it.correo.equals(correoTrim, ignoreCase = true) ||
                     (it.nombre.equals(nombreTrim, ignoreCase = true) && it.cargo.equals(cargoTrim, ignoreCase = true))
         }
-        if (duplicado) {
-            errCorreo = "Ya existe un contacto con este correo o nombre y cargo"
-            isValid = false
-        }
+
+        val finalErrCorreo = errCorreo ?: if (duplicado) "Ya existe un contacto con este correo o nombre y cargo" else null
+        val isValid = errNombre == null && errCargo == null && errTelefono == null && finalErrCorreo == null
 
         _uiState.update {
-            it.copy(errorNombre = errNombre, errorCargo = errCargo, errorTelefono = errTelefono, errorCorreo = errCorreo)
+            it.copy(
+                errorNombre = errNombre,
+                errorCargo = errCargo,
+                errorTelefono = errTelefono,
+                errorCorreo = finalErrCorreo
+            )
         }
 
         if (isValid) {
-            val solicitud = ContactoRequest(
+            _guardando.value = true
+            val nuevoContacto = Contacto(
                 nombre = nombreTrim,
                 cargo = cargoTrim,
-                telefono = estado.telefono.trim(),
+                telefono = telefonoTrim,
                 correo = correoTrim,
                 organizacionId = organizacionId
             )
 
             viewModelScope.launch {
-                _guardando.value = true
                 try {
-                    contactoRepository.crearContactoApi(solicitud)
+                    contactoRepository.guardar(nuevoContacto)
                     _uiState.value = ContactoUiState(guardadoExitoso = true)
-                    // Refresca la lista desde Spring Boot tras guardar el nuevo contacto
-                    cargarContactos()
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     _uiState.update {
-                        it.copy(errorCorreo = "No se pudo guardar en el servidor: ${e.message}")
+                        it.copy(errorCorreo = "No se pudo guardar el contacto.")
                     }
                 } finally {
                     _guardando.value = false
                 }
-            }
-        }
-    }
-
-    fun eliminarContacto(id: Int) {
-        viewModelScope.launch {
-            try {
-                contactoRepository.eliminarContactoApi(id)
-                cargarContactos()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _listUiState.value = ContactoListUiState.Error(
-                    "No se pudo eliminar el contacto: ${e.message}"
-                )
             }
         }
     }

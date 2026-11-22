@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.OrganizacionRepository
 import cl.duoc.gestionmovil.model.Organizacion
-import cl.duoc.gestionmovil.network.OrganizacionRequest
 import cl.duoc.gestionmovil.util.validarRut
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,22 +37,26 @@ class OrganizacionViewModel(
     private val _guardando = MutableStateFlow(false)
     val guardando: StateFlow<Boolean> = _guardando.asStateFlow()
 
+    private var cargaJob: Job? = null
+
     init {
         cargarOrganizaciones()
     }
 
     fun cargarOrganizaciones() {
-        viewModelScope.launch {
+        cargaJob?.cancel()
+        cargaJob = viewModelScope.launch {
             _listUiState.value = OrganizacionListUiState.Cargando
             try {
-                val lista = organizacionRepository.obtenerOrganizacionesApi()
-                _organizaciones.value = lista
-                _listUiState.value = OrganizacionListUiState.Exito(lista)
+                organizacionRepository.getAllOrganizaciones().collect { lista ->
+                    _organizaciones.value = lista
+                    _listUiState.value = OrganizacionListUiState.Exito(lista)
+                }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _listUiState.value = OrganizacionListUiState.Error(
-                    "No se pudieron cargar las organizaciones desde el servidor."
+                    "No se pudieron cargar las organizaciones."
                 )
             }
         }
@@ -96,7 +100,7 @@ class OrganizacionViewModel(
         _uiState.update { it.copy(errorNombre = errNombre, errorRut = errRut) }
 
         if (isValid) {
-            val solicitud = OrganizacionRequest(
+            val nuevaOrganizacion = Organizacion(
                 nombreEmpresa = nombreTrim,
                 rut = rutTrim,
                 direccion = estado.direccion.trim()
@@ -105,15 +109,13 @@ class OrganizacionViewModel(
             viewModelScope.launch {
                 _guardando.value = true
                 try {
-                    organizacionRepository.crearOrganizacionApi(solicitud)
+                    organizacionRepository.guardar(nuevaOrganizacion)
                     _uiState.value = OrganizacionUiState(guardadoExitoso = true)
-                    // Refresca el directorio desde Spring Boot tras crear la organización
-                    cargarOrganizaciones()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     _uiState.update {
-                        it.copy(errorNombre = "No se pudo guardar en el servidor: ${e.message}")
+                        it.copy(errorNombre = "No se pudo guardar la organización: ${e.message}")
                     }
                 } finally {
                     _guardando.value = false
@@ -125,8 +127,7 @@ class OrganizacionViewModel(
     fun eliminarOrganizacion(id: Int) {
         viewModelScope.launch {
             try {
-                organizacionRepository.eliminarOrganizacionApi(id)
-                cargarOrganizaciones()
+                organizacionRepository.eliminar(id)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

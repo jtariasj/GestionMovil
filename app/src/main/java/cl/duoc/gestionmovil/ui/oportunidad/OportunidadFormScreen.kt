@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -374,15 +376,22 @@ fun OportunidadFormContent(
                     uiState.fotoPath?.let { path ->
                         val bitmap = remember(path) { BitmapFactory.decodeFile(path) }
                         if (bitmap != null) {
+                            val aspectRatio = remember(bitmap) {
+                                if (bitmap.height > 0 && bitmap.width > 0) {
+                                    (bitmap.width.toFloat() / bitmap.height.toFloat()).coerceAtLeast(0.1f)
+                                } else {
+                                    1f
+                                }
+                            }
                             Spacer(modifier = Modifier.height(12.dp))
                             Image(
                                 bitmap = bitmap.asImageBitmap(),
                                 contentDescription = "Evidencia de la oportunidad",
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
+                                    .heightIn(max = 350.dp)
+                                    .aspectRatio(aspectRatio)
                                     .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Fit
                             )
                         }
                     }

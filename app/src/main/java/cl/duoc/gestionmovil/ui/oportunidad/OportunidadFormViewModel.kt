@@ -5,10 +5,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.OportunidadRepository
 import cl.duoc.gestionmovil.model.EstadoOportunidad
+import cl.duoc.gestionmovil.model.Oportunidad
 import cl.duoc.gestionmovil.model.PotencialComercial
 import cl.duoc.gestionmovil.model.Prioridad
 import cl.duoc.gestionmovil.model.TipoOportunidad
-import cl.duoc.gestionmovil.network.OportunidadRequest
 import cl.duoc.gestionmovil.util.formatearFecha
 import cl.duoc.gestionmovil.util.parsearFecha
 import cl.duoc.gestionmovil.util.validarContieneLetras
@@ -111,8 +111,7 @@ class OportunidadFormViewModel(private val oportunidadRepository: OportunidadRep
             viewModelScope.launch {
                 _uiState.update { it.copy(guardando = true, errorDuplicado = null) }
                 try {
-                    val existentes = oportunidadRepository.obtenerOportunidadesApi()
-                        .filter { it.nombre.equals(nombreTrim, ignoreCase = true) }
+                    val existentes = oportunidadRepository.obtenerPorNombre(nombreTrim)
 
                     if (existentes.isNotEmpty()) {
                         _uiState.update {
@@ -123,21 +122,21 @@ class OportunidadFormViewModel(private val oportunidadRepository: OportunidadRep
                         }
                     } else {
                         val ahora = System.currentTimeMillis()
-                        val solicitud = OportunidadRequest(
+                        val nuevaOportunidad = Oportunidad(
                             nombre = nombreTrim,
-                            tipo = estado.tipo!!.name,
+                            tipo = estado.tipo!!,
                             descripcion = estado.descripcion.trim(),
                             fuenteInformacion = estado.fuente.trim(),
                             fechaDeteccion = parsearFecha(estado.fechaDeteccion)!!,
                             responsable = estado.responsable.trim(),
-                            prioridad = estado.prioridad!!.name,
-                            potencialComercial = estado.potencial!!.name,
-                            estado = EstadoOportunidad.EVENTO_IDENTIFICADO.name,
+                            prioridad = estado.prioridad!!,
+                            potencialComercial = estado.potencial!!,
+                            estado = EstadoOportunidad.EVENTO_IDENTIFICADO,
                             fechaActualizacion = ahora,
                             observaciones = estado.observaciones.trim(),
                             fotoPath = estado.fotoPath
                         )
-                        oportunidadRepository.crearOportunidadApi(solicitud)
+                        oportunidadRepository.guardar(nuevaOportunidad)
                         _uiState.value = estadoInicial().copy(guardadoExitoso = true)
                     }
                 } catch (e: CancellationException) {

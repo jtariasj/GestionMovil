@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.OportunidadRepository
 import cl.duoc.gestionmovil.model.Oportunidad
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +30,7 @@ class OportunidadListViewModel(
     val searchQuery: StateFlow<String> = _searchQuery
 
     private val _estadoBase = MutableStateFlow<OportunidadListUiState>(OportunidadListUiState.Cargando)
+    private var cargaJob: Job? = null
 
     // Combina el estado de red (Cargando/Exito/Error) con el buscador en tiempo real
     val uiState: StateFlow<OportunidadListUiState> = combine(
@@ -68,21 +70,23 @@ class OportunidadListViewModel(
     }
 
     fun cargarOportunidades() {
-        viewModelScope.launch {
+        cargaJob?.cancel()
+        cargaJob = viewModelScope.launch {
             _estadoBase.value = OportunidadListUiState.Cargando
             try {
-                val todas = oportunidadRepository.obtenerOportunidadesApi()
-                val filtradasPorRol = if (rolUsuario == "SUPERVISOR") {
-                    todas
+                val flujo = if (rolUsuario == "SUPERVISOR") {
+                    oportunidadRepository.getAllOportunidades()
                 } else {
-                    todas.filter { it.responsable.equals(nombreUsuario, ignoreCase = true) }
+                    oportunidadRepository.obtenerPorResponsable(nombreUsuario)
                 }
-                _estadoBase.value = OportunidadListUiState.Exito(filtradasPorRol)
+                flujo.collect { lista ->
+                    _estadoBase.value = OportunidadListUiState.Exito(lista)
+                }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _estadoBase.value = OportunidadListUiState.Error(
-                    "No se pudo conectar con el servidor. Comprueba la conexión e inténtalo nuevamente."
+                    "No se pudieron cargar las oportunidades."
                 )
             }
         }

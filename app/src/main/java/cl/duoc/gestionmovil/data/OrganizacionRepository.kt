@@ -1,62 +1,56 @@
 package cl.duoc.gestionmovil.data
 
+import android.util.Log
 import cl.duoc.gestionmovil.model.Organizacion
 import cl.duoc.gestionmovil.network.GestionMovilApiService
 import cl.duoc.gestionmovil.network.OrganizacionRequest
 import cl.duoc.gestionmovil.network.RetrofitClient
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
-import retrofit2.Response
 
 class OrganizacionRepository(
-    private val organizacionDao: OrganizacionDao? = null,
+    private val organizacionDao: OrganizacionDao,
     private val api: GestionMovilApiService = RetrofitClient.api
 ) {
+    private val refrescoRemoto = MutableStateFlow(0)
 
-    // =========================================================================
-    // 1. OPERACIONES REMOTAS (RETROFIT -> SPRING BOOT)
-    // =========================================================================
-
-    suspend fun obtenerOrganizacionesApi(): List<Organizacion> {
-        val listaRemota = api.obtenerOrganizaciones()
-        // Respaldo local en Room si está disponible
-        organizacionDao?.let { dao ->
-            listaRemota.forEach { dao.insert(it) }
+    fun getAllOrganizaciones(): Flow<List<Organizacion>> = flow {
+        try {
+            refrescoRemoto.collect {
+                emit(obtenerListaSeguraApi())
+            }
+        } catch (e: Exception) {
+            runCatching { Log.w("OrganizacionRepo", "Leyendo organizaciones desde Room: ${e.message}") }
+            organizacionDao.getAllOrganizaciones().collect { emit(it) }
         }
-        return listaRemota
-    }
-
-    suspend fun obtenerOrganizacionApi(id: Int): Organizacion {
-        return api.obtenerOrganizacion(id)
-    }
-
-    suspend fun crearOrganizacionApi(organizacion: OrganizacionRequest) {
-        comprobarRespuesta(api.crearOrganizacion(organizacion))
-    }
-
-    suspend fun actualizarOrganizacionApi(id: Int, organizacion: OrganizacionRequest) {
-        comprobarRespuesta(api.actualizarOrganizacion(id, organizacion))
-    }
-
-    suspend fun eliminarOrganizacionApi(id: Int) {
-        comprobarRespuesta(api.eliminarOrganizacion(id))
-    }
-
-    private fun comprobarRespuesta(respuesta: Response<Void>) {
-        if (!respuesta.isSuccessful) {
-            throw HttpException(respuesta)
-        }
-    }
-
-    // =========================================================================
-    // 2. OPERACIONES LOCALES
-    // =========================================================================
-
-    fun getAllOrganizaciones(): Flow<List<Organizacion>> {
-        return requireNotNull(organizacionDao).getAllOrganizaciones()
     }
 
     suspend fun guardar(organizacion: Organizacion) {
-        organizacionDao?.insert(organizacion)
+        try {
+            val resp = api.crearOrganizacion(
+                OrganizacionRequest(organizacion.nombreEmpresa, organizacion.rut, organizacion.direccion)
+            )
+            if (!resp.isSuccessful) throw HttpException(resp)
+            refrescoRemoto.value++
+        } catch (e: Exception) {
+            runCatching { Log.w("OrganizacionRepo", "Fallo API al guardar organización, usando Room: ${e.message}") }
+            organizacionDao.insert(organizacion)
+        }
+    }
+
+    suspend fun eliminar(id: Int) {
+        val resp = api.eliminarOrganizacion(id)
+        if (!resp.isSuccessful) throw HttpException(resp)
+        refrescoRemoto.value++
+    }
+
+    private suspend fun obtenerListaSeguraApi(): List<Organizacion> {
+        return try {
+            api.obtenerOrganizaciones()
+        } catch (e: HttpException) {
+            if (e.code() == 404) emptyList() else throw e
+        }
     }
 }

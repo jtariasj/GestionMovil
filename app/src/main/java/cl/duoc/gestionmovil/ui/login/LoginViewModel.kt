@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.UsuarioRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +17,7 @@ class LoginViewModel(private val usuarioRepository: UsuarioRepository) : ViewMod
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 usuarioRepository.asegurarUsuariosIniciales()
             } catch (e: CancellationException) {
@@ -30,7 +31,7 @@ class LoginViewModel(private val usuarioRepository: UsuarioRepository) : ViewMod
     fun iniciarSesion(correo: String, contrasena: String) {
         _uiState.value = LoginUiState(isLoading = true)
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val usuario = usuarioRepository.login(correo, contrasena)
 

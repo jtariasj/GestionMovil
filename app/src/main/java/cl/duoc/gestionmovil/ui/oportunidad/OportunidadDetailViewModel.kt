@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.OportunidadRepository
 import cl.duoc.gestionmovil.model.EstadoOportunidad
 import cl.duoc.gestionmovil.model.Oportunidad
-import cl.duoc.gestionmovil.network.OportunidadRequest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,18 +24,14 @@ class OportunidadDetailViewModel(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     fun cargarOportunidad(id: Int) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _error.value = null
             try {
-                // Consulta el detalle actualizado desde Spring Boot (GET /api/v1/oportunidad/{id})
-                val opRemota = oportunidadRepository.obtenerOportunidadApi(id)
-                _oportunidad.value = opRemota
+                _oportunidad.value = oportunidadRepository.obtenerPorId(id)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Respaldo local en Room si falla la conexión
-                _oportunidad.value = oportunidadRepository.obtenerPorId(id)
-                _error.value = "No se pudo sincronizar con el servidor: ${e.message}"
+                _error.value = "No se pudo cargar la oportunidad: ${e.message}"
             }
         }
     }
@@ -45,8 +41,6 @@ class OportunidadDetailViewModel(
         viewModelScope.launch {
             _error.value = null
             try {
-                // Elimina en Spring Boot (DELETE /api/v1/oportunidad/{id})
-                oportunidadRepository.eliminarOportunidadApi(op.id)
                 oportunidadRepository.eliminar(op)
                 onEliminado()
             } catch (e: CancellationException) {
@@ -67,11 +61,6 @@ class OportunidadDetailViewModel(
         viewModelScope.launch {
             _error.value = null
             try {
-                // Actualiza en Spring Boot (PUT /api/v1/oportunidad/{id})
-                oportunidadRepository.actualizarOportunidadApi(
-                    id = oportunidadActualizada.id,
-                    oportunidad = oportunidadActualizada.toRequest()
-                )
                 oportunidadRepository.actualizar(oportunidadActualizada)
                 _oportunidad.value = oportunidadActualizada
             } catch (e: CancellationException) {
@@ -92,11 +81,6 @@ class OportunidadDetailViewModel(
         viewModelScope.launch {
             _error.value = null
             try {
-                // Actualiza estado en Spring Boot (PUT /api/v1/oportunidad/{id})
-                oportunidadRepository.actualizarOportunidadApi(
-                    id = oportunidadActualizada.id,
-                    oportunidad = oportunidadActualizada.toRequest()
-                )
                 oportunidadRepository.actualizar(oportunidadActualizada)
                 _oportunidad.value = oportunidadActualizada
             } catch (e: CancellationException) {
@@ -106,21 +90,6 @@ class OportunidadDetailViewModel(
             }
         }
     }
-
-    private fun Oportunidad.toRequest() = OportunidadRequest(
-        nombre = nombre,
-        tipo = tipo.name,
-        descripcion = descripcion,
-        fuenteInformacion = fuenteInformacion,
-        fechaDeteccion = fechaDeteccion,
-        responsable = responsable,
-        prioridad = prioridad.name,
-        potencialComercial = potencialComercial.name,
-        estado = estado.name,
-        fechaActualizacion = fechaActualizacion,
-        observaciones = observaciones,
-        fotoPath = fotoPath
-    )
 }
 
 class OportunidadDetailViewModelFactory(

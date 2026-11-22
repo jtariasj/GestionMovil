@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.SeguimientoRepository
 import cl.duoc.gestionmovil.model.Seguimiento
-import cl.duoc.gestionmovil.network.SeguimientoRequest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,22 +33,26 @@ class SeguimientoViewModel(
     private val _guardando = MutableStateFlow(false)
     val guardando: StateFlow<Boolean> = _guardando.asStateFlow()
 
+    private var cargaJob: Job? = null
+
     init {
         cargarHistorial()
     }
 
     fun cargarHistorial() {
-        viewModelScope.launch {
+        cargaJob?.cancel()
+        cargaJob = viewModelScope.launch {
             _uiState.value = SeguimientoUiState.Cargando
             try {
-                val lista = seguimientoRepository.obtenerSeguimientosPorOportunidadApi(oportunidadId)
-                _historial.value = lista
-                _uiState.value = SeguimientoUiState.Exito(lista)
+                seguimientoRepository.getSeguimientosPorOportunidad(oportunidadId).collect { lista ->
+                    _historial.value = lista
+                    _uiState.value = SeguimientoUiState.Exito(lista)
+                }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _uiState.value = SeguimientoUiState.Error(
-                    "No se pudo cargar el historial de seguimiento desde el servidor."
+                    "No se pudo cargar el historial de seguimiento."
                 )
             }
         }
@@ -73,7 +77,7 @@ class SeguimientoViewModel(
             return
         }
 
-        val solicitud = SeguimientoRequest(
+        val nuevoSeguimiento = Seguimiento(
             fecha = System.currentTimeMillis(),
             descripcion = descTrim,
             tipoGestion = tipoGestion,
@@ -83,9 +87,7 @@ class SeguimientoViewModel(
         viewModelScope.launch {
             _guardando.value = true
             try {
-                seguimientoRepository.crearSeguimientoApi(solicitud)
-                // Recarga el historial desde Spring Boot tras registrar la gestión
-                cargarHistorial()
+                seguimientoRepository.guardar(nuevoSeguimiento)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
