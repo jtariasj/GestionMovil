@@ -5,25 +5,55 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.OrganizacionRepository
 import cl.duoc.gestionmovil.model.Organizacion
+import cl.duoc.gestionmovil.network.OrganizacionRequest
 import cl.duoc.gestionmovil.util.validarRut
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class OrganizacionViewModel(private val organizacionRepository: OrganizacionRepository) : ViewModel() {
+sealed interface OrganizacionListUiState {
+    data object Cargando : OrganizacionListUiState
+    data class Exito(val organizaciones: List<Organizacion>) : OrganizacionListUiState
+    data class Error(val mensaje: String) : OrganizacionListUiState
+}
 
+class OrganizacionViewModel(
+    private val organizacionRepository: OrganizacionRepository
+) : ViewModel() {
+
+    private val _listUiState = MutableStateFlow<OrganizacionListUiState>(OrganizacionListUiState.Cargando)
+    val listUiState: StateFlow<OrganizacionListUiState> = _listUiState.asStateFlow()
+
+    // Mantiene compatibilidad directa con OrganizacionScreen.kt
     private val _organizaciones = MutableStateFlow<List<Organizacion>>(emptyList())
     val organizaciones: StateFlow<List<Organizacion>> = _organizaciones.asStateFlow()
 
     private val _uiState = MutableStateFlow(OrganizacionUiState())
     val uiState: StateFlow<OrganizacionUiState> = _uiState.asStateFlow()
 
+    private val _guardando = MutableStateFlow(false)
+    val guardando: StateFlow<Boolean> = _guardando.asStateFlow()
+
     init {
+        cargarOrganizaciones()
+    }
+
+    fun cargarOrganizaciones() {
         viewModelScope.launch {
-            organizacionRepository.getAllOrganizaciones().collect { lista ->
+            _listUiState.value = OrganizacionListUiState.Cargando
+            try {
+                val lista = organizacionRepository.obtenerOrganizacionesApi()
                 _organizaciones.value = lista
+                _listUiState.value = OrganizacionListUiState.Exito(lista)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _listUiState.value = OrganizacionListUiState.Error(
+                    "No se pudieron cargar las organizaciones desde el servidor."
+                )
             }
         }
     }
@@ -34,6 +64,8 @@ class OrganizacionViewModel(private val organizacionRepository: OrganizacionRepo
     fun resetExito() = _uiState.update { it.copy(guardadoExitoso = false, nombre = "", rut = "", direccion = "") }
 
     fun validarYGuardar() {
+        if (_guardando.value) return
+
         val estado = _uiState.value
         var isValid = true
 
@@ -53,7 +85,8 @@ class OrganizacionViewModel(private val organizacionRepository: OrganizacionRepo
         val nombreTrim = estado.nombre.trim()
         val rutTrim = estado.rut.trim()
         val duplicado = _organizaciones.value.any {
-            it.nombreEmpresa.equals(nombreTrim, ignoreCase = true) || it.rut.equals(rutTrim, ignoreCase = true)
+            it.nombreEmpresa.equals(nombreTrim, ignoreCase = true) ||
+                    it.rut.equals(rutTrim, ignoreCase = true)
         }
         if (duplicado) {
             errNombre = "Ya existe una organización con este nombre o RUT"
@@ -63,20 +96,51 @@ class OrganizacionViewModel(private val organizacionRepository: OrganizacionRepo
         _uiState.update { it.copy(errorNombre = errNombre, errorRut = errRut) }
 
         if (isValid) {
+            val solicitud = OrganizacionRequest(
+                nombreEmpresa = nombreTrim,
+                rut = rutTrim,
+                direccion = estado.direccion.trim()
+            )
+
             viewModelScope.launch {
-                val nuevaOrg = Organizacion(
-                    nombreEmpresa = nombreTrim,
-                    rut = rutTrim,
-                    direccion = estado.direccion.trim()
+                _guardando.value = true
+                try {
+                    organizacionRepository.crearOrganizacionApi(solicitud)
+                    _uiState.value = OrganizacionUiState(guardadoExitoso = true)
+                    // Refresca el directorio desde Spring Boot tras crear la organización
+                    cargarOrganizaciones()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _uiState.update {
+                        it.copy(errorNombre = "No se pudo guardar en el servidor: ${e.message}")
+                    }
+                } finally {
+                    _guardando.value = false
+                }
+            }
+        }
+    }
+
+    fun eliminarOrganizacion(id: Int) {
+        viewModelScope.launch {
+            try {
+                organizacionRepository.eliminarOrganizacionApi(id)
+                cargarOrganizaciones()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _listUiState.value = OrganizacionListUiState.Error(
+                    "No se pudo eliminar la organización: ${e.message}"
                 )
-                organizacionRepository.guardar(nuevaOrg)
-                _uiState.value = OrganizacionUiState(guardadoExitoso = true)
             }
         }
     }
 }
 
-class OrganizacionViewModelFactory(private val organizacionRepository: OrganizacionRepository) : ViewModelProvider.Factory {
+class OrganizacionViewModelFactory(
+    private val organizacionRepository: OrganizacionRepository
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OrganizacionViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
