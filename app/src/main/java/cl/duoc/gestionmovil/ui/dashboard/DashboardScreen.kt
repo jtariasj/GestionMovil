@@ -65,7 +65,7 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Tarjeta de API Externa (mindicador.cl - IE 3.1.4)
+            // Tarjeta de APIs Externas (Dólar + Clima en terreno - IE 3.1.4)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -74,7 +74,7 @@ fun DashboardScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Indicadores del Día (Referencia Costos)",
+                        text = "Información del Día (Dólar y Clima)",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -87,7 +87,7 @@ fun DashboardScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                Text("Consultando UF y Dólar...", style = MaterialTheme.typography.bodyMedium)
+                                Text("Consultando Dólar y Clima...", style = MaterialTheme.typography.bodyMedium)
                             }
                         }
 
@@ -105,12 +105,12 @@ fun DashboardScreen(
 
                         is IndicadoresUiState.Exito -> {
                             Text(
-                                text = "• Valor UF hoy: $${actual.valorUf} CLP",
+                                text = "• Valor Dólar hoy: $${actual.valorDolar} CLP",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "• Valor Dólar hoy: $${actual.valorDolar} CLP",
+                                text = "• Clima Santiago: ${actual.temperatura}°C (${actual.descripcionClima}, viento ${actual.viento} km/h)",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
