@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.OportunidadRepository
+import cl.duoc.gestionmovil.data.UsuarioRepository
 import cl.duoc.gestionmovil.model.EstadoOportunidad
 import cl.duoc.gestionmovil.model.Oportunidad
+import cl.duoc.gestionmovil.model.RolUsuario
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,14 +16,45 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class OportunidadDetailViewModel(
-    private val oportunidadRepository: OportunidadRepository
+    private val oportunidadRepository: OportunidadRepository,
+    private val usuarioRepository: UsuarioRepository? = null
 ) : ViewModel() {
 
     private val _oportunidad = MutableStateFlow<Oportunidad?>(null)
     val oportunidad: StateFlow<Oportunidad?> = _oportunidad.asStateFlow()
 
+    private val _ejecutivos = MutableStateFlow(
+        listOf("Ejecutivo Uno", "Ejecutivo Dos", "Ejecutivo Tres")
+    )
+    val ejecutivos: StateFlow<List<String>> = _ejecutivos.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    init {
+        cargarEjecutivos()
+    }
+
+    private fun cargarEjecutivos() {
+        val repo = usuarioRepository ?: return
+        viewModelScope.launch {
+            try {
+                repo.getAllUsuarios().collect { usuarios ->
+                    val listaEjecutivos = usuarios
+                        .filter { it.rol == RolUsuario.EJECUTIVO }
+                        .map { it.nombre }
+                        .distinct()
+                    if (listaEjecutivos.isNotEmpty()) {
+                        _ejecutivos.value = listaEjecutivos
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Mantiene los ejecutivos por defecto si falla la consulta
+            }
+        }
+    }
 
     fun cargarOportunidad(id: Int) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -93,12 +126,13 @@ class OportunidadDetailViewModel(
 }
 
 class OportunidadDetailViewModelFactory(
-    private val oportunidadRepository: OportunidadRepository
+    private val oportunidadRepository: OportunidadRepository,
+    private val usuarioRepository: UsuarioRepository? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OportunidadDetailViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OportunidadDetailViewModel(oportunidadRepository) as T
+            return OportunidadDetailViewModel(oportunidadRepository, usuarioRepository) as T
         }
         throw IllegalArgumentException("Clase ViewModel desconocida")
     }

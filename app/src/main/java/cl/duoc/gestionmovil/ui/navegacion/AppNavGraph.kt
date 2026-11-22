@@ -88,6 +88,8 @@ fun AppNavGraph(
 
             DashboardScreen(
                 rolUsuario = rol,
+                nombreUsuario = nombre,
+                oportunidadRepository = oportunidadRepository,
                 onNavigateToList = { navController.navigate("oportunidad_list/$rol/$nombre") },
                 onNavigateToForm = { navController.navigate(Destinos.NUEVA_OPORTUNIDAD) },
                 onNavigateToOrganizaciones = { navController.navigate(Destinos.ORGANIZACIONES) },
@@ -138,7 +140,7 @@ fun AppNavGraph(
             val rol = backStackEntry.arguments?.getString("rol") ?: "EJECUTIVO"
 
             val detailViewModel: OportunidadDetailViewModel = viewModel(
-                factory = OportunidadDetailViewModelFactory(oportunidadRepository)
+                factory = OportunidadDetailViewModelFactory(oportunidadRepository, usuarioRepository)
             )
             OportunidadDetailScreen(
                 oportunidadId = id,

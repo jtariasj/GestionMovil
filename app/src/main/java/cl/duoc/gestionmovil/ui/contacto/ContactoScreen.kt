@@ -34,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +47,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.gestionmovil.model.Contacto
+import cl.duoc.gestionmovil.ui.theme.AmarilloDorado
+import cl.duoc.gestionmovil.ui.theme.TextoOscuro
 
 /**
  * Stateful Composable:
@@ -110,6 +113,12 @@ fun ContactoContent(
         topBar = {
             TopAppBar(
                 title = { Text("Contactos de la Empresa") },
+                colors = topAppBarColors(
+                    containerColor = AmarilloDorado,
+                    titleContentColor = TextoOscuro,
+                    navigationIconContentColor = TextoOscuro,
+                    actionIconContentColor = TextoOscuro
+                ),
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver") }
                 }

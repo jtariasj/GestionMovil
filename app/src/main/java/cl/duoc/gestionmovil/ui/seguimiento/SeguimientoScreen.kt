@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +35,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.gestionmovil.model.Seguimiento
+import cl.duoc.gestionmovil.ui.theme.AmarilloDorado
+import cl.duoc.gestionmovil.ui.theme.TextoOscuro
 import cl.duoc.gestionmovil.util.formatearFecha
 
 /**
@@ -77,6 +80,12 @@ fun SeguimientoContent(
         topBar = {
             TopAppBar(
                 title = { Text("Historial de Seguimiento") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AmarilloDorado,
+                    titleContentColor = TextoOscuro,
+                    navigationIconContentColor = TextoOscuro,
+                    actionIconContentColor = TextoOscuro
+                ),
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")

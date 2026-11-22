@@ -1,68 +1,67 @@
 package cl.duoc.gestionmovil.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = MoradoClaro,
-    onPrimary = Color(0xFF2A004E),
-    primaryContainer = MoradoPrincipal,
-    onPrimaryContainer = MoradoContenedor,
-    secondary = NaranjaClaro,
-    onSecondary = Color(0xFF3E1500),
-    secondaryContainer = NaranjaOscuro,
-    onSecondaryContainer = NaranjaContenedor,
-    tertiary = NaranjaOscuro,
-    onTertiary = Color.White,
-    background = FondoAppOscuro,
-    surface = SuperficieOscura,
-    onBackground = Color(0xFFEDE7F6),
-    onSurface = Color(0xFFEDE7F6)
-)
 
 private val LightColorScheme = lightColorScheme(
-    primary = MoradoPrincipal,
-    onPrimary = Color.White,
-    primaryContainer = MoradoContenedor,
-    onPrimaryContainer = MoradoPrincipal,
-    secondary = NaranjaOscuro,
-    onSecondary = Color.White,
-    secondaryContainer = NaranjaContenedor,
-    onSecondaryContainer = NaranjaQuemado,
-    tertiary = NaranjaQuemado,
-    onTertiary = Color.White,
-    tertiaryContainer = NaranjaContenedor,
-    onTertiaryContainer = NaranjaQuemado,
-    background = FondoAppClaro,
-    surface = SuperficieClara,
+    primary = AzulIndigo,
+    onPrimary = BlancoPuro,
+    primaryContainer = AzulSuave,
+    onPrimaryContainer = AzulIndigoOscuro,
+
+    secondary = NaranjaAmbar,
+    onSecondary = BlancoPuro,
+    secondaryContainer = AmarilloClaro,
+    onSecondaryContainer = TextoOscuro,
+
+    tertiary = AmarilloDorado,
+    onTertiary = TextoOscuro,
+    tertiaryContainer = AmarilloClaro,
+    onTertiaryContainer = TextoOscuro,
+
+    background = FondoClaro,
     onBackground = TextoOscuro,
-    onSurface = TextoOscuro
+    surface = BlancoPuro,
+    onSurface = TextoOscuro,
+    surfaceVariant = Color(0xFFECEFF6),
+    onSurfaceVariant = TextoSecundario,
+
+    error = RojoAlerta,
+    onError = BlancoPuro,
+    errorContainer = RojoAlertaFondo,
+    onErrorContainer = Color(0xFF8B1D1F)
+)
+
+private val DarkColorScheme = darkColorScheme(
+    primary = Color(0xFF8C9EFF),
+    onPrimary = Color(0xFF141B4D),
+    primaryContainer = AzulIndigoOscuro,
+    onPrimaryContainer = AzulSuave,
+
+    secondary = AmarilloDorado,
+    onSecondary = TextoOscuro,
+    secondaryContainer = Color(0xFF4A3B10),
+    onSecondaryContainer = AmarilloClaro,
+
+    background = Color(0xFF12151F),
+    onBackground = Color(0xFFE8ECF4),
+    surface = Color(0xFF1C2030),
+    onSurface = Color(0xFFE8ECF4),
+    surfaceVariant = Color(0xFF262B3D),
+    onSurfaceVariant = Color(0xFFB3BAC8)
 )
 
 @Composable
 fun GestionMovilTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // En false para que siempre se muestren el morado y naranjo oscuro en Android 12+
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

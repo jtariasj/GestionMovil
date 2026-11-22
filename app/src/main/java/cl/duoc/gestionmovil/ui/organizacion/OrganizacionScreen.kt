@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +39,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.gestionmovil.model.Organizacion
+import cl.duoc.gestionmovil.ui.theme.AmarilloDorado
+import cl.duoc.gestionmovil.ui.theme.TextoOscuro
 
 /**
  * Stateful Composable:
@@ -103,6 +106,12 @@ fun OrganizacionContent(
         topBar = {
             TopAppBar(
                 title = { Text("Organizaciones") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AmarilloDorado,
+                    titleContentColor = TextoOscuro,
+                    navigationIconContentColor = TextoOscuro,
+                    actionIconContentColor = TextoOscuro
+                ),
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver") }
                 }

@@ -46,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.gestionmovil.model.EstadoOportunidad
 import cl.duoc.gestionmovil.model.Oportunidad
+import cl.duoc.gestionmovil.ui.theme.AmarilloDorado
+import cl.duoc.gestionmovil.ui.theme.TextoOscuro
 import cl.duoc.gestionmovil.util.formatearFecha
 import java.io.File
 
@@ -82,11 +85,13 @@ fun OportunidadDetailScreen(
     }
 
     val oportunidad by viewModel.oportunidad.collectAsStateWithLifecycle()
+    val ejecutivos by viewModel.ejecutivos.collectAsStateWithLifecycle()
 
     OportunidadDetailContent(
         oportunidadId = oportunidadId,
         rolUsuario = rolUsuario,
         oportunidad = oportunidad,
+        ejecutivos = ejecutivos,
         onNavigateBack = onNavigateBack,
         onEliminarOportunidad = { viewModel.eliminarOportunidad(onNavigateBack) },
         onReasignarOportunidad = viewModel::reasignarOportunidad,
@@ -105,6 +110,7 @@ fun OportunidadDetailContent(
     oportunidadId: Int,
     rolUsuario: String,
     oportunidad: Oportunidad?,
+    ejecutivos: List<String> = listOf("Ejecutivo Uno", "Ejecutivo Dos", "Ejecutivo Tres"),
     onNavigateBack: () -> Unit,
     onEliminarOportunidad: () -> Unit,
     onReasignarOportunidad: (String) -> Unit,
@@ -117,6 +123,12 @@ fun OportunidadDetailContent(
         topBar = {
             TopAppBar(
                 title = { Text("Detalle de Oportunidad") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AmarilloDorado,
+                    titleContentColor = TextoOscuro,
+                    navigationIconContentColor = TextoOscuro,
+                    actionIconContentColor = TextoOscuro
+                ),
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -375,9 +387,76 @@ fun OportunidadDetailContent(
                     Text("Ver Historial de Seguimientos (Bitácora)")
                 }
 
+                // Tarjeta de Gestión de Estado (según rol del caso)
+                val esSupervisor = rolUsuario.equals("Supervisor", ignoreCase = true)
+                val estadosDisponibles = remember(esSupervisor) {
+                    if (esSupervisor) {
+                        EstadoOportunidad.entries
+                    } else {
+                        listOf(
+                            EstadoOportunidad.EVENTO_IDENTIFICADO,
+                            EstadoOportunidad.CONTACTO_PENDIENTE,
+                            EstadoOportunidad.CONTACTO_REALIZADO,
+                            EstadoOportunidad.PROPUESTA_ENVIADA,
+                            EstadoOportunidad.EN_ESPERA_RESPUESTA
+                        )
+                    }
+                }
+                var estadoExpandido by remember { mutableStateOf(false) }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Actualizar Estado de la Oportunidad",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+
+                        ExposedDropdownMenuBox(
+                            expanded = estadoExpandido,
+                            onExpandedChange = { estadoExpandido = !estadoExpandido }
+                        ) {
+                            OutlinedTextField(
+                                value = item.estado.etiqueta,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Estado de gestión") },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = estadoExpandido)
+                                },
+                                modifier = Modifier
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                    .fillMaxWidth()
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = estadoExpandido,
+                                onDismissRequest = { estadoExpandido = false }
+                            ) {
+                                estadosDisponibles.forEach { estado ->
+                                    DropdownMenuItem(
+                                        text = { Text(estado.etiqueta) },
+                                        onClick = {
+                                            estadoExpandido = false
+                                            onActualizarEstado(estado)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 if (rolUsuario.equals("Supervisor", ignoreCase = true)) {
                     var expandido by remember { mutableStateOf(false) }
-                    val ejecutivos = listOf("Carlos Ruiz", "María Soto", "Pedro Gómez")
                     var ejecutivoSeleccionado by remember(item.responsable) {
                         mutableStateOf(item.responsable)
                     }
