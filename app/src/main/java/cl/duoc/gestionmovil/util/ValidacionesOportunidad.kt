@@ -1,7 +1,6 @@
 package cl.duoc.gestionmovil.util
 
 // Reglas de validación del formulario de oportunidad.
-// No saben nada de la UI: solo responden "¿es válido?"
 
 fun validarNombreOportunidad(nombre: String): Boolean {
     return nombre.trim().length >= 3
@@ -15,7 +14,6 @@ fun validarFuente(fuente: String): Boolean {
     return fuente.isNotBlank()
 }
 
-// Debe ser una fecha real en formato dd/MM/yyyy y no puede estar en el futuro
 fun validarFechaDeteccion(fecha: String): Boolean {
     val millis = parsearFecha(fecha) ?: return false
     return millis <= System.currentTimeMillis()
@@ -29,7 +27,6 @@ fun validarSeleccion(valor: Any?): Boolean {
     return valor != null
 }
 
-// --- NUEVAS VALIDACIONES ---
 fun validarRut(rut: String): Boolean {
     val rutLimpio = rut.replace(".", "").replace("-", "").trim()
     return rutLimpio.length in 8..9
@@ -47,4 +44,13 @@ fun validarCorreo(correo: String): Boolean {
 
 fun validarContieneLetras(texto: String): Boolean {
     return texto.trim().any { it.isLetter() }
+}
+fun validarPublicoEsperado(publico: String): Boolean { //Preferi utilizar string para su multiuso y flexibilidad
+    val valor = publico.trim().toIntOrNull() ?: return false
+    return valor > 0
+}
+
+fun validarCostoNoNegativo(costo: String): Boolean {
+    val valor = costo.trim().toDoubleOrNull() ?: return false
+    return valor >= 0.0
 }

@@ -12,6 +12,7 @@ room = "3.0.3"
 ksp = "2.3.4"
 navigationCompose = "2.10.2"
 roomCommon = "2.8.5"
+kover = "0.9.11"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,4 +41,4 @@ androidx-room-common = { group = "androidx.room", name = "room-common", version.
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
