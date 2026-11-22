@@ -65,3 +65,31 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.2")
 }
+kover {
+    reports {
+        filters {
+            includes {
+                classes(
+                    // Validaciones y reglas de negocio puras (paquete util)
+                    "cl.duoc.gestionmovil.util.*",
+
+                    // Repositories (capa de datos híbrida Retrofit + Room)
+                    "cl.duoc.gestionmovil.data.OportunidadRepository*",
+                    "cl.duoc.gestionmovil.data.UsuarioRepository*",
+                    "cl.duoc.gestionmovil.data.OrganizacionRepository*",
+                    "cl.duoc.gestionmovil.data.ContactoRepository*",
+                    "cl.duoc.gestionmovil.data.SeguimientoRepository*",
+
+                    // ViewModels (lógica de presentación, estados y permisos)
+                    "cl.duoc.gestionmovil.ui.oportunidad.OportunidadFormViewModel*",
+                    "cl.duoc.gestionmovil.ui.oportunidad.OportunidadListViewModel*",
+                    "cl.duoc.gestionmovil.ui.oportunidad.OportunidadDetailViewModel*",
+                    "cl.duoc.gestionmovil.ui.login.LoginViewModel*",
+                    "cl.duoc.gestionmovil.ui.organizacion.OrganizacionViewModel*",
+                    "cl.duoc.gestionmovil.ui.contacto.ContactoViewModel*",
+                    "cl.duoc.gestionmovil.ui.seguimiento.SeguimientoViewModel*"
+                )
+            }
+        }
+    }
+}
