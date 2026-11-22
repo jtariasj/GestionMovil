@@ -6,9 +6,11 @@ import cl.duoc.gestionmovil.model.Usuario
 import cl.duoc.gestionmovil.network.GestionMovilApiService
 import cl.duoc.gestionmovil.network.RetrofitClient
 import cl.duoc.gestionmovil.network.UsuarioRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
+import retrofit2.Response
 
 class UsuarioRepository(
     private val usuarioDao: UsuarioDao,
@@ -24,6 +26,8 @@ class UsuarioRepository(
     suspend fun contarUsuarios(): Int {
         return try {
             obtenerListaSeguraApi().size
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             usuarioDao.contarUsuarios()
         }
@@ -33,37 +37,58 @@ class UsuarioRepository(
         try {
             if (obtenerListaSeguraApi().isEmpty()) {
                 usuariosIniciales.forEach {
-                    api.crearUsuario(UsuarioRequest(it.nombre, it.correo, it.contrasena, it.rol.name))
+                    comprobarRespuesta(
+                        api.crearUsuario(UsuarioRequest(it.nombre, it.correo, it.contrasena, it.rol.name))
+                    )
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             runCatching { Log.w("UsuarioRepo", "Fallo API en seed inicial, usando Room: ${e.message}") }
-            if (usuarioDao.contarUsuarios() == 0) {
-                usuariosIniciales.forEach { usuarioDao.insert(it) }
-            }
+            asegurarUsuariosLocales()
         }
     }
 
     suspend fun login(correo: String, contrasena: String): Usuario? {
+        val credencial = correo.trim()
+        val pass = contrasena.trim()
+
         return try {
             asegurarUsuariosIniciales()
-            obtenerListaSeguraApi().find {
-                it.correo.equals(correo.trim(), ignoreCase = true) && it.contrasena == contrasena.trim()
+            val usuariosRemotos = obtenerListaSeguraApi()
+            if (usuariosRemotos.isEmpty()) {
+                // Si el servidor respondió vacío incluso tras el seed, usar respaldo local
+                asegurarUsuariosLocales()
+                return usuarioDao.login(credencial, pass)
             }
+            usuariosRemotos.find {
+                (it.correo.equals(credencial, ignoreCase = true) ||
+                        it.correo.equals("$credencial@test.com", ignoreCase = true)) &&
+                        it.contrasena == pass
+            }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             runCatching { Log.w("UsuarioRepo", "Fallo API en login, usando Plan B (Room): ${e.message}") }
-            if (usuarioDao.contarUsuarios() == 0) {
-                usuariosIniciales.forEach { usuarioDao.insert(it) }
-            }
-            usuarioDao.login(correo.trim(), contrasena.trim())
+            asegurarUsuariosLocales()
+            usuarioDao.login(credencial, pass)
         }
     }
 
     fun getAllUsuarios(): Flow<List<Usuario>> = flow {
         try {
             emit(obtenerListaSeguraApi())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             usuarioDao.getAllUsuarios().collect { emit(it) }
+        }
+    }
+
+    private suspend fun asegurarUsuariosLocales() {
+        if (usuarioDao.contarUsuarios() == 0) {
+            usuariosIniciales.forEach { usuarioDao.insert(it) }
         }
     }
 
@@ -72,6 +97,12 @@ class UsuarioRepository(
             api.obtenerUsuarios()
         } catch (e: HttpException) {
             if (e.code() == 404) emptyList() else throw e
+        }
+    }
+
+    private fun comprobarRespuesta(respuesta: Response<Void>) {
+        if (!respuesta.isSuccessful) {
+            throw HttpException(respuesta)
         }
     }
 }
