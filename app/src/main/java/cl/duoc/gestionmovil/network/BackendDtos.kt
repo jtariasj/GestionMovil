@@ -13,7 +13,6 @@ data class OportunidadRequest(
     val fechaActualizacion: Long,
     val observaciones: String = "",
     val fotoPath: String? = null
-    // Nota: Si debajo de la línea 49 de Oportunidad.java existe 'organizacionId: Int', agrégalo aquí también.
 )
 
 data class OrganizacionRequest(

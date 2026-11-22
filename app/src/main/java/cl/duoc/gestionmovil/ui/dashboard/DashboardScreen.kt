@@ -1,13 +1,18 @@
 package cl.duoc.gestionmovil.ui.dashboard
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -15,9 +20,12 @@ fun DashboardScreen(
     rolUsuario: String?,
     onNavigateToList: () -> Unit,
     onNavigateToForm: () -> Unit,
-    onNavigateToOrganizaciones: () -> Unit, // 1. NUEVO PARAMETRO
-    onLogout: () -> Unit
+    onNavigateToOrganizaciones: () -> Unit,
+    onLogout: () -> Unit,
+    viewModel: DashboardViewModel = viewModel()
 ) {
+    val estadoIndicadores by viewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -37,6 +45,7 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -54,23 +63,89 @@ fun DashboardScreen(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Tarjeta de API Externa (mindicador.cl - IE 3.1.4)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Indicadores del Día (Referencia Costos)",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    when (val actual = estadoIndicadores) {
+                        is IndicadoresUiState.Cargando -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Text("Consultando UF y Dólar...", style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+
+                        is IndicadoresUiState.Error -> {
+                            Text(
+                                text = actual.mensaje,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(onClick = { viewModel.cargarIndicadores() }) {
+                                Text("Reintentar")
+                            }
+                        }
+
+                        is IndicadoresUiState.Exito -> {
+                            Text(
+                                text = "• Valor UF hoy: $${actual.valorUf} CLP",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "• Valor Dólar hoy: $${actual.valorDolar} CLP",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Alertas y Pendientes", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                    Text(
+                        "Alertas y Pendientes",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text("• 2 Oportunidades próximas a vencer", style = MaterialTheme.typography.bodyMedium)
                     Text("• 3 Seguimientos pendientes de registro", style = MaterialTheme.typography.bodyMedium)
-                    Text("• 1 Gestión atrasada (Prioridad ALTA)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        "• 1 Gestión atrasada (Prioridad ALTA)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            //Separacion usuarios
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Separación usuarios
             if (rolUsuario == "SUPERVISOR") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -114,7 +189,7 @@ fun DashboardScreen(
                 Text("Directorio de Organizaciones")
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedButton(onClick = onLogout) {
                 Text("Cerrar Sesión")

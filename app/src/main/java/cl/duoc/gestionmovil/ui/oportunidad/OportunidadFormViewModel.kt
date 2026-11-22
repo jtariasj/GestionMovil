@@ -4,10 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.OportunidadRepository
-import cl.duoc.gestionmovil.model.Oportunidad
+import cl.duoc.gestionmovil.model.EstadoOportunidad
 import cl.duoc.gestionmovil.model.PotencialComercial
 import cl.duoc.gestionmovil.model.Prioridad
 import cl.duoc.gestionmovil.model.TipoOportunidad
+import cl.duoc.gestionmovil.network.OportunidadRequest
 import cl.duoc.gestionmovil.util.formatearFecha
 import cl.duoc.gestionmovil.util.parsearFecha
 import cl.duoc.gestionmovil.util.validarContieneLetras
@@ -15,6 +16,7 @@ import cl.duoc.gestionmovil.util.validarFechaDeteccion
 import cl.duoc.gestionmovil.util.validarNombreOportunidad
 import cl.duoc.gestionmovil.util.validarResponsable
 import cl.duoc.gestionmovil.util.validarSeleccion
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +48,7 @@ class OportunidadFormViewModel(private val oportunidadRepository: OportunidadRep
 
     fun guardar() {
         val estado = _uiState.value
+        if (estado.guardando) return
 
         val errorNombre = !validarNombreOportunidad(estado.nombre)
         val errorTipo = !validarSeleccion(estado.tipo)
@@ -55,7 +58,8 @@ class OportunidadFormViewModel(private val oportunidadRepository: OportunidadRep
         val errorResponsable = !validarResponsable(estado.responsable)
         val errorPrioridad = !validarSeleccion(estado.prioridad)
         val errorPotencial = !validarSeleccion(estado.potencial)
-        //Reglas de negocio
+
+        // Reglas de negocio
         var msgErrorCosto: String? = null
         if (estado.costo.isBlank()) {
             msgErrorCosto = "El costo referencial es obligatorio."
@@ -105,40 +109,45 @@ class OportunidadFormViewModel(private val oportunidadRepository: OportunidadRep
         if (formularioValido) {
             val nombreTrim = estado.nombre.trim()
             viewModelScope.launch {
-                val existentes = oportunidadRepository.obtenerPorNombre(nombreTrim)
-                if (existentes.isNotEmpty()) {
-                    _uiState.update {
-                        it.copy(
-                            errorNombre = true,
-                            errorTipo = true,
-                            errorDescripcion = true,
-                            errorFuente = true,
-                            errorFecha = true,
-                            errorResponsable = true,
-                            errorPrioridad = true,
-                            errorPotencial = true,
-                            errorCosto = "La oportunidad ya está creada",
-                            errorFechaTermino = null,
-                            errorDuplicado = "La oportunidad ya está creada."
+                _uiState.update { it.copy(guardando = true, errorDuplicado = null) }
+                try {
+                    val existentes = oportunidadRepository.obtenerOportunidadesApi()
+                        .filter { it.nombre.equals(nombreTrim, ignoreCase = true) }
+
+                    if (existentes.isNotEmpty()) {
+                        _uiState.update {
+                            it.copy(
+                                errorNombre = true,
+                                errorDuplicado = "La oportunidad ya está creada."
+                            )
+                        }
+                    } else {
+                        val ahora = System.currentTimeMillis()
+                        val solicitud = OportunidadRequest(
+                            nombre = nombreTrim,
+                            tipo = estado.tipo!!.name,
+                            descripcion = estado.descripcion.trim(),
+                            fuenteInformacion = estado.fuente.trim(),
+                            fechaDeteccion = parsearFecha(estado.fechaDeteccion)!!,
+                            responsable = estado.responsable.trim(),
+                            prioridad = estado.prioridad!!.name,
+                            potencialComercial = estado.potencial!!.name,
+                            estado = EstadoOportunidad.EVENTO_IDENTIFICADO.name,
+                            fechaActualizacion = ahora,
+                            observaciones = estado.observaciones.trim(),
+                            fotoPath = estado.fotoPath
                         )
+                        oportunidadRepository.crearOportunidadApi(solicitud)
+                        _uiState.value = estadoInicial().copy(guardadoExitoso = true)
                     }
-                } else {
-                    val ahora = System.currentTimeMillis()
-                    val oportunidad = Oportunidad(
-                        nombre = nombreTrim,
-                        tipo = estado.tipo!!,
-                        descripcion = estado.descripcion.trim(),
-                        fuenteInformacion = estado.fuente.trim(),
-                        fechaDeteccion = parsearFecha(estado.fechaDeteccion)!!,
-                        responsable = estado.responsable.trim(),
-                        prioridad = estado.prioridad!!,
-                        potencialComercial = estado.potencial!!,
-                        fechaActualizacion = ahora,
-                        observaciones = estado.observaciones.trim(),
-                        fotoPath = estado.fotoPath
-                    )
-                    oportunidadRepository.guardar(oportunidad)
-                    _uiState.value = estadoInicial().copy(guardadoExitoso = true)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _uiState.update {
+                        it.copy(errorDuplicado = "No se pudo guardar en el servidor: ${e.message}")
+                    }
+                } finally {
+                    _uiState.update { it.copy(guardando = false) }
                 }
             }
         }

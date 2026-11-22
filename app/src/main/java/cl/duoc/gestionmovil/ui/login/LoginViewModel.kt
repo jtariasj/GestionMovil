@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.duoc.gestionmovil.data.UsuarioRepository
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,9 +16,11 @@ class LoginViewModel(private val usuarioRepository: UsuarioRepository) : ViewMod
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 usuarioRepository.asegurarUsuariosIniciales()
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 // Se volverá a intentar al iniciar sesión si aún no está lista
             }
@@ -28,7 +30,7 @@ class LoginViewModel(private val usuarioRepository: UsuarioRepository) : ViewMod
     fun iniciarSesion(correo: String, contrasena: String) {
         _uiState.value = LoginUiState(isLoading = true)
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val usuario = usuarioRepository.login(correo, contrasena)
 
@@ -39,10 +41,11 @@ class LoginViewModel(private val usuarioRepository: UsuarioRepository) : ViewMod
                         error = "Credenciales incorrectas (prueba: supervisor@test.com / 1234)"
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
                 _uiState.value = LoginUiState(
-                    error = "Error de base de datos: ${e.localizedMessage ?: "desconocido"}"
+                    error = "Error de conexión: ${e.localizedMessage ?: "desconocido"}"
                 )
             }
         }

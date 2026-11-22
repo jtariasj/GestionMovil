@@ -19,11 +19,9 @@ data class OportunidadFormUiState(
     val costo: String = "",
     val fechaTermino: String = "",
 
-
-
     val fotoPath: String? = null,
-    // Estados de error
 
+    // Estados de error
     val errorNombre: Boolean = false,
     val errorTipo: Boolean = false,
     val errorDescripcion: Boolean = false,
@@ -38,6 +36,7 @@ data class OportunidadFormUiState(
     val errorFechaTermino: String? = null,
     val errorDuplicado: String? = null,
 
-    // Para avisar a la pantalla que se guardó correctamente
+    // Control de estado de red y guardado (EA3.2)
+    val guardando: Boolean = false,
     val guardadoExitoso: Boolean = false
 )
