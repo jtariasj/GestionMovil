@@ -154,6 +154,10 @@ fun DashboardScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Panel de Control (Supervisor)", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = onNavigateToForm, modifier = Modifier.fillMaxWidth()) {
+                            Text("Registrar nueva oportunidad")
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                         Button(onClick = onNavigateToList, modifier = Modifier.fillMaxWidth()) {
                             Text("Ver todas las oportunidades")
                         }
