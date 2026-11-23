@@ -107,9 +107,5 @@ El reporte HTML se genera en `app/build/reports/kover/htmlDebug/index.html`.
 ### 6.1. Pruebas Unitarias y Cobertura (Kover ≥ 80%)
 > ![Reporte de cobertura Kover](docs/kover_cobertura.png)
 
-### 6.2. APK Firmado y Archivo Keystore (`.jks`)
-* **Ubicación del APK firmado:** `app/release/app-release.apk`
-* **Archivo de firma configurado:** `signingConfigs` en `app/build.gradle.kts` con llave `.jks`.
 
-> ![Evidencia APK firmado y archivo .jks](docs/apk_firmado.png)
 
